@@ -7,7 +7,6 @@ const API_BASE_URL =
 export interface ResultEntry {
     registrationNo: string;
     testCode: string;
-
     methodCode: string;
     method: string;
     unit: string;
@@ -17,13 +16,10 @@ export interface ResultEntry {
     nabl: string;
     spec: string;
     refMethod: string;
-
-    // Visible but NOT editable
 }
 
 export interface UpdateResultRow {
     testCode: string;
-
     methodCode: string;
     method: string;
     unit: string;
@@ -50,54 +46,31 @@ interface UpdateResultsResponse {
 export const getResultsByRegistration = async (
     registrationNo: string
 ): Promise<ResultEntry[]> => {
-    try {
-        const response =
-            await axios.get<GetResultsResponse>(
-                `${API_BASE_URL}/result-entry`,
-                {
-                    params: {
-                        registrationNo,
-                    },
-                }
-            );
-
-        console.log(
-            "Result Entry API response:",
-            response.data
+    const response =
+        await axios.get<GetResultsResponse>(
+            `${API_BASE_URL}/result-entry`,
+            {
+                params: {
+                    registrationNo,
+                },
+            }
         );
 
-        return response.data.data;
-    } catch (error) {
-        console.error(
-            "Failed to fetch result entry:",
-            error
-        );
-
-        throw error;
-    }
+    return response.data.data;
 };
 
 export const updateResults = async (
     registrationNo: string,
     rows: UpdateResultRow[]
 ): Promise<UpdateResultsResponse> => {
-    try {
-        const response =
-            await axios.put<UpdateResultsResponse>(
-                `${API_BASE_URL}/result-entry`,
-                {
-                    registrationNo,
-                    rows,
-                }
-            );
-
-        return response.data;
-    } catch (error) {
-        console.error(
-            "Failed to update result entry:",
-            error
+    const response =
+        await axios.put<UpdateResultsResponse>(
+            `${API_BASE_URL}/result-entry`,
+            {
+                registrationNo,
+                rows,
+            }
         );
 
-        throw error;
-    }
+    return response.data;
 };

@@ -63,3 +63,4 @@ C:\birattam\react project\ResultEntryApp\backend\obj\Debug\net10.0\refint\Result
 C:\birattam\react project\ResultEntryApp\backend\obj\Debug\net10.0\ResultEntryApi.pdb
 C:\birattam\react project\ResultEntryApp\backend\obj\Debug\net10.0\ResultEntryApi.genruntimeconfig.cache
 C:\birattam\react project\ResultEntryApp\backend\obj\Debug\net10.0\ref\ResultEntryApi.dll
+C:\birattam\react project\ResultEntryApp\backend\obj\Debug\net10.0\ResultEntryApi.sourcelink.json

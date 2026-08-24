@@ -3,15 +3,14 @@ import {
     useMemo,
     useState,
 } from "react";
-import "./ResultEntryPage.css";
+
 import {
     getResultsByRegistration,
     updateResults,
+    type ResultEntry,
 } from "../services/ResultEntryService";
 
-import type {
-    ResultEntry,
-} from "../services/ResultEntryService";
+import "./ResultEntryPage.css";
 
 interface Props {
     registrationNo?: string;
@@ -23,28 +22,34 @@ const ResultEntryPage = ({
     const [registrationNo, setRegistrationNo] =
         useState(propRegistrationNo || "");
 
-    const [rows, setRows] = useState<ResultEntry[]>([]);
+    const [rows, setRows] =
+        useState<ResultEntry[]>([]);
+
     const [originalRows, setOriginalRows] =
         useState<ResultEntry[]>([]);
 
-    const [search, setSearch] = useState("");
+    const [loading, setLoading] =
+        useState(false);
 
-    const [loading, setLoading] = useState(false);
-    const [saving, setSaving] = useState(false);
+    const [saving, setSaving] =
+        useState(false);
 
-    const [message, setMessage] = useState("");
-    const [error, setError] = useState("");
+    const [error, setError] =
+        useState("");
+
+    const [message, setMessage] =
+        useState("");
 
     const loadRegistration = async (
-        value?: string
+        regValue?: string
     ) => {
         const regNo = (
-            value || registrationNo
+            regValue || registrationNo
         ).trim();
 
         if (!regNo) {
             setError(
-                "Please enter a registration number."
+                "Registration number is required."
             );
 
             return;
@@ -56,44 +61,45 @@ const ResultEntryPage = ({
             setMessage("");
 
             const data =
-                await getResultsByRegistration(regNo);
+                await getResultsByRegistration(
+                    regNo
+                );
 
-            const normalized = data.map((row) => ({
-                ...row,
+            const normalized: ResultEntry[] =
+                data.map((row) => ({
+                    registrationNo:
+                        row.registrationNo ?? "",
 
-                registrationNo:
-                    row.registrationNo ?? "",
+                    testCode:
+                        row.testCode ?? "",
 
-                testCode:
-                    row.testCode ?? "",
+                    methodCode:
+                        row.methodCode ?? "",
 
-                methodCode:
-                    row.methodCode ?? "",
+                    method:
+                        row.method ?? "",
 
-                method:
-                    row.method ?? "",
+                    unit:
+                        row.unit ?? "",
 
-                unit:
-                    row.unit ?? "",
+                    instrument:
+                        row.instrument ?? "",
 
-                instrument:
-                    row.instrument ?? "",
+                    loq:
+                        row.loq ?? "",
 
-                loq:
-                    row.loq ?? "",
+                    result:
+                        row.result ?? "",
 
-                result:
-                    row.result ?? "",
+                    nabl:
+                        row.nabl ?? "",
 
-                nabl:
-                    row.nabl ?? "",
+                    spec:
+                        row.spec ?? "",
 
-                spec:
-                    row.spec ?? "",
-
-                refMethod:
-                    row.refMethod ?? "",
-            }));
+                    refMethod:
+                        row.refMethod ?? "",
+                }));
 
             setRows(normalized);
 
@@ -105,12 +111,14 @@ const ResultEntryPage = ({
 
             setRegistrationNo(regNo);
         } catch (err: any) {
+            console.error(err);
+
             setRows([]);
             setOriginalRows([]);
 
             setError(
                 err?.response?.data?.message ||
-                "Unable to load registration."
+                    "Unable to load registration."
             );
         } finally {
             setLoading(false);
@@ -131,13 +139,14 @@ const ResultEntryPage = ({
         value: string
     ) => {
         setRows((previous) =>
-            previous.map((row, rowIndex) =>
-                rowIndex === index
-                    ? {
-                        ...row,
-                        [field]: value,
-                    }
-                    : row
+            previous.map(
+                (row, rowIndex) =>
+                    rowIndex === index
+                        ? {
+                              ...row,
+                              [field]: value,
+                          }
+                        : row
             )
         );
     };
@@ -146,51 +155,55 @@ const ResultEntryPage = ({
         row: ResultEntry,
         index: number
     ) => {
-        const original = originalRows[index];
+        const original =
+            originalRows[index];
 
-        if (!original) return false;
+        if (!original) {
+            return false;
+        }
 
         return (
-            row.methodCode !== original.methodCode ||
-            row.method !== original.method ||
-            row.unit !== original.unit ||
+            row.methodCode !==
+                original.methodCode ||
+            row.method !==
+                original.method ||
+            row.unit !==
+                original.unit ||
             row.instrument !==
-            original.instrument ||
-            row.loq !== original.loq ||
-            row.result !== original.result ||
-            row.nabl !== original.nabl ||
-            row.spec !== original.spec ||
+                original.instrument ||
+            row.loq !==
+                original.loq ||
+            row.result !==
+                original.result ||
+            row.nabl !==
+                original.nabl ||
+            row.spec !==
+                original.spec ||
             row.refMethod !==
-            original.refMethod
+                original.refMethod
         );
     };
 
-    const modifiedRowsCount = useMemo(() => {
-        return rows.filter((row, index) =>
-            isModified(row, index)
-        ).length;
-    }, [rows, originalRows]);
-
-    const handleReset = () => {
-        setRows(
-            JSON.parse(
-                JSON.stringify(originalRows)
-            )
-        );
-
-        setMessage("");
-        setError("");
-    };
+    const modifiedRowsCount =
+        useMemo(() => {
+            return rows.filter(
+                (row, index) =>
+                    isModified(row, index)
+            ).length;
+        }, [rows, originalRows]);
 
     const handleSave = async () => {
-        const changedRows = rows.filter(
-            (row, index) =>
-                isModified(row, index)
-        );
+        const changedRows =
+            rows.filter(
+                (row, index) =>
+                    isModified(row, index)
+            );
 
-        if (changedRows.length === 0) {
+        if (
+            changedRows.length === 0
+        ) {
             setMessage(
-                "There are no changes to save."
+                "No changes to save."
             );
 
             return;
@@ -203,493 +216,419 @@ const ResultEntryPage = ({
 
             await updateResults(
                 registrationNo,
-                changedRows.map((row) => ({
-                    testCode: row.testCode,
-                    methodCode: row.methodCode,
-                    method: row.method,
-                    unit: row.unit,
-                    instrument:
-                        row.instrument,
-                    loq: row.loq,
-                    result: row.result,
-                    nabl: row.nabl,
-                    spec: row.spec,
-                    refMethod:
-                        row.refMethod,
-                }))
+                changedRows.map(
+                    (row) => ({
+                        testCode:
+                            row.testCode,
+
+                        methodCode:
+                            row.methodCode,
+
+                        method:
+                            row.method,
+
+                        unit:
+                            row.unit,
+
+                        instrument:
+                            row.instrument,
+
+                        loq:
+                            row.loq,
+
+                        result:
+                            row.result,
+
+                        nabl:
+                            row.nabl,
+
+                        spec:
+                            row.spec,
+
+                        refMethod:
+                            row.refMethod,
+                    })
+                )
             );
 
             setMessage(
                 "Changes saved successfully."
             );
 
-            // Fetch again because OUT, DATA
-            // and Analyst Test Date are
-            // automatically updated by backend.
             await loadRegistration(
                 registrationNo
             );
         } catch (err: any) {
+            console.error(err);
+
             setError(
                 err?.response?.data?.message ||
-                "Unable to save changes."
+                    "Unable to save changes."
             );
         } finally {
             setSaving(false);
         }
     };
 
-    const filteredRows = rows.filter(
-        (row) => {
-            if (!search.trim()) return true;
-
-            const value =
-                search.toLowerCase();
-
-            return (
-                row.testCode
-                    .toLowerCase()
-                    .includes(value) ||
-                row.methodCode
-                    .toLowerCase()
-                    .includes(value) ||
-                row.method
-                    .toLowerCase()
-                    .includes(value) ||
-                row.result
-                    .toLowerCase()
-                    .includes(value)
-            );
-        }
-    );
-
-
     return (
-        <div className="result-page">
-            <div className="result-container">
+        <div className="result-entry-page">
 
-                <div className="page-header">
-                    <div>
-                        <h1>Result Entry</h1>
+            <header className="efrac-banner">
+                <img
+                    src="/efrac-header.png"
+                    alt="EFRAC"
+                />
+            </header>
 
-                        <p>
-                            Review and update test
-                            result information
-                        </p>
-                    </div>
-
-                    {rows.length > 0 && (
-                        <div className="header-count">
-                            <span>
-                                Total Tests
-                            </span>
-
-                            <strong>
-                                {rows.length}
-                            </strong>
-                        </div>
-                    )}
-                </div>
-
-                <div className="registration-card">
+            {!propRegistrationNo && (
+                <div className="registration-loader">
                     <label>
-                        Registration Number
+                        Registration No.
                     </label>
 
-                    <div className="registration-row">
-                        <input
-                            value={registrationNo}
-                            onChange={(e) =>
-                                setRegistrationNo(
-                                    e.target.value
-                                )
+                    <input
+                        type="text"
+                        value={registrationNo}
+                        onChange={(e) =>
+                            setRegistrationNo(
+                                e.target.value
+                            )
+                        }
+                        onKeyDown={(e) => {
+                            if (
+                                e.key === "Enter"
+                            ) {
+                                loadRegistration();
                             }
-                            placeholder="Enter registration number"
-                            onKeyDown={(e) => {
-                                if (
-                                    e.key ===
-                                    "Enter"
-                                ) {
-                                    loadRegistration();
-                                }
-                            }}
-                        />
+                        }}
+                    />
+
+                    <button
+                        onClick={() =>
+                            loadRegistration()
+                        }
+                        disabled={loading}
+                    >
+                        {loading
+                            ? "Loading..."
+                            : "Load"}
+                    </button>
+                </div>
+            )}
+
+            {error && (
+                <div className="error-message">
+                    {error}
+                </div>
+            )}
+
+            {message && (
+                <div className="success-message">
+                    {message}
+                </div>
+            )}
+
+            {rows.length > 0 && (
+                <>
+                    <div className="table-scroll">
+                        <table className="result-table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Sample ID
+                                    </th>
+
+                                    <th>
+                                        Test Code
+                                    </th>
+
+                                    <th>
+                                        M Code
+                                    </th>
+
+                                    <th>
+                                        Method
+                                    </th>
+
+                                    <th>
+                                        Unit
+                                    </th>
+
+                                    <th>
+                                        Instrument
+                                    </th>
+
+                                    <th>
+                                        LOQ
+                                    </th>
+
+                                    <th>
+                                        Result
+                                    </th>
+
+                                    <th>
+                                        NABL
+                                    </th>
+
+                                    <th>
+                                        Spec
+                                    </th>
+
+                                    <th>
+                                        Ref Method
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {rows.map(
+                                    (
+                                        row,
+                                        index
+                                    ) => {
+                                        const modified =
+                                            isModified(
+                                                row,
+                                                index
+                                            );
+
+                                        return (
+                                            <tr
+                                                key={`${row.registrationNo}-${row.testCode}-${index}`}
+                                                className={
+                                                    modified
+                                                        ? "modified-row"
+                                                        : ""
+                                                }
+                                            >
+                                                <td className="readonly-cell sample-id-cell">
+                                                    {
+                                                        row.registrationNo
+                                                    }
+                                                </td>
+
+                                                <td className="readonly-cell test-code-cell">
+                                                    {
+                                                        row.testCode
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    <input
+                                                        value={
+                                                            row.methodCode
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
+                                                            handleChange(
+                                                                index,
+                                                                "methodCode",
+                                                                e
+                                                                    .target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    />
+                                                </td>
+
+                                                <td>
+                                                    <input
+                                                        value={
+                                                            row.method
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
+                                                            handleChange(
+                                                                index,
+                                                                "method",
+                                                                e
+                                                                    .target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    />
+                                                </td>
+
+                                                <td>
+                                                    <input
+                                                        value={
+                                                            row.unit
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
+                                                            handleChange(
+                                                                index,
+                                                                "unit",
+                                                                e
+                                                                    .target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    />
+                                                </td>
+
+                                                <td>
+                                                    <input
+                                                        value={
+                                                            row.instrument
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
+                                                            handleChange(
+                                                                index,
+                                                                "instrument",
+                                                                e
+                                                                    .target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    />
+                                                </td>
+
+                                                <td>
+                                                    <input
+                                                        value={
+                                                            row.loq
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
+                                                            handleChange(
+                                                                index,
+                                                                "loq",
+                                                                e
+                                                                    .target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    />
+                                                </td>
+
+                                                <td>
+                                                    <input
+                                                        value={
+                                                            row.result
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
+                                                            handleChange(
+                                                                index,
+                                                                "result",
+                                                                e
+                                                                    .target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    />
+                                                </td>
+
+                                                <td>
+                                                    <select
+                                                        value={
+                                                            row.nabl
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
+                                                            handleChange(
+                                                                index,
+                                                                "nabl",
+                                                                e
+                                                                    .target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    >
+                                                        <option value="">
+                                                            -
+                                                        </option>
+
+                                                        <option value="Y">
+                                                            Y
+                                                        </option>
+
+                                                        <option value="N">
+                                                            N
+                                                        </option>
+                                                    </select>
+                                                </td>
+
+                                                <td>
+                                                    <input
+                                                        value={
+                                                            row.spec
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
+                                                            handleChange(
+                                                                index,
+                                                                "spec",
+                                                                e
+                                                                    .target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    />
+                                                </td>
+
+                                                <td>
+                                                    <input
+                                                        value={
+                                                            row.refMethod
+                                                        }
+                                                        onChange={(
+                                                            e
+                                                        ) =>
+                                                            handleChange(
+                                                                index,
+                                                                "refMethod",
+                                                                e
+                                                                    .target
+                                                                    .value
+                                                            )
+                                                        }
+                                                    />
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="save-area">
+                        <div className="change-info">
+                            {modifiedRowsCount >
+                            0
+                                ? `${modifiedRowsCount} row(s) modified`
+                                : ""}
+                        </div>
 
                         <button
-                            className="load-button"
-                            onClick={() =>
-                                loadRegistration()
+                            className="save-button"
+                            onClick={
+                                handleSave
                             }
-                            disabled={loading}
+                            disabled={
+                                saving ||
+                                modifiedRowsCount ===
+                                    0
+                            }
                         >
-                            {loading
-                                ? "Loading..."
-                                : "Load"}
+                            {saving
+                                ? "Saving..."
+                                : "Save Changes"}
                         </button>
                     </div>
-                </div>
-
-                {error && (
-                    <div className="alert error">
-                        {error}
-                    </div>
-                )}
-
-                {message && (
-                    <div className="alert success">
-                        {message}
-                    </div>
-                )}
-
-                {rows.length > 0 && (
-                    <>
-                        <div className="toolbar">
-                            <div>
-                                <strong>
-                                    Registration:
-                                </strong>{" "}
-                                {registrationNo}
-                            </div>
-
-                            <div className="toolbar-right">
-                                <span className="modified-count">
-                                    {
-                                        modifiedRowsCount
-                                    }{" "}
-                                    modified
-                                </span>
-
-                                <input
-                                    className="search-input"
-                                    value={search}
-                                    onChange={(e) =>
-                                        setSearch(
-                                            e.target
-                                                .value
-                                        )
-                                    }
-                                    placeholder="Search test..."
-                                />
-                            </div>
-                        </div>
-
-                        <div className="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>
-                                            Sample ID
-                                        </th>
-
-                                        <th>
-                                            Test Code
-                                        </th>
-
-                                        <th>
-                                            M Code
-                                        </th>
-
-                                        <th>
-                                            Method
-                                        </th>
-
-                                        <th>Unit</th>
-
-                                        <th>
-                                            Instrument
-                                        </th>
-
-                                        <th>LOQ</th>
-
-                                        <th>
-                                            Result
-                                        </th>
-
-                                        <th>NABL</th>
-
-                                        <th>Spec</th>
-
-                                        <th>
-                                            Ref Method
-                                        </th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {filteredRows.map(
-                                        (row) => {
-                                            const actualIndex =
-                                                rows.findIndex(
-                                                    (
-                                                        r
-                                                    ) =>
-                                                        r ===
-                                                        row
-                                                );
-
-                                            const modified =
-                                                isModified(
-                                                    row,
-                                                    actualIndex
-                                                );
-
-                                            return (
-                                                <tr
-                                                    key={`${row.registrationNo}-${row.testCode}`}
-                                                    className={
-                                                        modified
-                                                            ? "modified-row"
-                                                            : ""
-                                                    }
-                                                >
-                                                    <td className="readonly-cell registration-cell">
-                                                        {
-                                                            row.registrationNo
-                                                        }
-                                                    </td>
-
-                                                    <td className="readonly-cell test-code">
-                                                        {
-                                                            row.testCode
-                                                        }
-                                                    </td>
-
-                                                    <td>
-                                                        <input
-                                                            value={
-                                                                row.methodCode
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                handleChange(
-                                                                    actualIndex,
-                                                                    "methodCode",
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                    </td>
-
-                                                    <td>
-                                                        <textarea
-                                                            value={
-                                                                row.method
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                handleChange(
-                                                                    actualIndex,
-                                                                    "method",
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                    </td>
-
-                                                    <td>
-                                                        <input
-                                                            value={
-                                                                row.unit
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                handleChange(
-                                                                    actualIndex,
-                                                                    "unit",
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                    </td>
-
-                                                    <td>
-                                                        <input
-                                                            value={
-                                                                row.instrument
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                handleChange(
-                                                                    actualIndex,
-                                                                    "instrument",
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                    </td>
-
-                                                    <td>
-                                                        <input
-                                                            value={
-                                                                row.loq
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                handleChange(
-                                                                    actualIndex,
-                                                                    "loq",
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                    </td>
-
-                                                    <td>
-                                                        <input
-                                                            value={
-                                                                row.result
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                handleChange(
-                                                                    actualIndex,
-                                                                    "result",
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                    </td>
-
-                                                    <td>
-                                                        <select
-                                                            value={
-                                                                row.nabl
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                handleChange(
-                                                                    actualIndex,
-                                                                    "nabl",
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        >
-                                                            <option value="">
-                                                                -
-                                                            </option>
-
-                                                            <option value="Y">
-                                                                Y
-                                                            </option>
-
-                                                            <option value="N">
-                                                                N
-                                                            </option>
-                                                        </select>
-                                                    </td>
-
-                                                    <td>
-                                                        <textarea
-                                                            value={
-                                                                row.spec
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                handleChange(
-                                                                    actualIndex,
-                                                                    "spec",
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                    </td>
-
-                                                    <td>
-                                                        <textarea
-                                                            value={
-                                                                row.refMethod
-                                                            }
-                                                            onChange={(
-                                                                e
-                                                            ) =>
-                                                                handleChange(
-                                                                    actualIndex,
-                                                                    "refMethod",
-                                                                    e
-                                                                        .target
-                                                                        .value
-                                                                )
-                                                            }
-                                                        />
-                                                    </td>
-
-                                                </tr>
-                                            );
-                                        }
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="footer-actions">
-                            <div>
-                                <span>
-                                    {
-                                        filteredRows.length
-                                    }{" "}
-                                    of{" "}
-                                    {rows.length}{" "}
-                                    tests
-                                </span>
-                            </div>
-
-                            <div className="button-group">
-                                <button
-                                    className="reset-button"
-                                    onClick={
-                                        handleReset
-                                    }
-                                    disabled={
-                                        saving
-                                    }
-                                >
-                                    Reset
-                                </button>
-
-                                <button
-                                    className="save-button"
-                                    onClick={
-                                        handleSave
-                                    }
-                                    disabled={
-                                        saving ||
-                                        modifiedRowsCount ===
-                                        0
-                                    }
-                                >
-                                    {saving
-                                        ? "Saving..."
-                                        : `Save Changes (${modifiedRowsCount})`}
-                                </button>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </div>
+                </>
+            )}
         </div>
     );
 };
