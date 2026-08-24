@@ -1,11 +1,33 @@
-# Frontend environment
+# ==============================
+# Frontend
+# ==============================
+
 frontend/.env
 frontend/.env.local
+frontend/.env.development.local
+frontend/.env.production.local
 
-# Backend build
+frontend/node_modules/
+frontend/dist/
+
+
+# ==============================
+# Backend
+# ==============================
+
 backend/bin/
 backend/obj/
 
-# Frontend build
-frontend/node_modules/
-frontend/dist/
+
+# ==============================
+# IDE / OS
+# ==============================
+
+.vs/
+.vscode/
+.idea/
+
+*.user
+*.suo
+.DS_Store
+Thumbs.db
