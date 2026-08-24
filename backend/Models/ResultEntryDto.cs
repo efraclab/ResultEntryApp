@@ -15,6 +15,8 @@ namespace ResultEntryApi.Models
         public string? Spec { get; set; }
         public string? RefMethod { get; set; }
 
+        public string? HodReview { get; set; }
+
         // Backend-only fields.
         // These values are fetched from TRN205
         // but are not displayed on the frontend.

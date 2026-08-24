@@ -48,6 +48,7 @@ namespace ResultEntryApi.Repositories
                     TRN2NABLYN,
                     TRN2HEADSPEC,
                     TRN2REFMETHOD,
+                    TRN2HODREVIEW,
                     TRN2OUT,
                     TRN2DATA,
                     TRN2AnlstTestDt
@@ -179,6 +180,10 @@ namespace ResultEntryApi.Repositories
                                     "TRN2REFMETHOD"
                                 ]
                             ),
+                        HodReview =
+                            GetDisplayValue(
+                                reader["TRN2HODREVIEW"]
+                                ),
 
                         /*
                          * These values can still be
@@ -281,8 +286,9 @@ namespace ResultEntryApi.Repositories
                         TRN2METHOD = @Method,
                         TRN2_METHDO_DTL = @MethodCode
 
-                    WHERE TRN2REFNO = @RegistrationNo
-                    AND TRN2HEADER = @TestCode;
+                   WHERE TRN2REFNO = @RegistrationNo
+                    AND TRN2HEADER = @TestCode
+                    AND ISNULL(TRN2HODREVIEW, 'N') <> 'Y';
                 ";
 
 
@@ -428,12 +434,10 @@ namespace ResultEntryApi.Repositories
                             .ExecuteNonQueryAsync();
 
 
-                    if (
-                        affectedRows == 0
-                    )
+                    if (affectedRows == 0)
                     {
                         throw new Exception(
-                            $"No row found for Registration No: {request.RegistrationNo}, Test Code: {row.TestCode}"
+                            $"Unable to update Test Code {row.TestCode}. The row may already be HOD reviewed."
                         );
                     }
                 }

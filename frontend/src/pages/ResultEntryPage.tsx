@@ -18,13 +18,22 @@ import {
 import "./ResultEntryPage.css";
 
 
+/* =========================================================
+   PROPS
+========================================================= */
+
 interface Props {
     registrationNo?: string;
 }
 
 
+/* =========================================================
+   RESULT EDITOR PROPS
+========================================================= */
+
 interface ResultEditorProps {
     html: string;
+    disabled?: boolean;
     onChange: (html: string) => void;
 }
 
@@ -36,6 +45,7 @@ interface ResultEditorProps {
 const displayValue = (
     value: string | null | undefined
 ): string => {
+
     if (
         value === null ||
         value === undefined ||
@@ -51,6 +61,7 @@ const displayValue = (
 const saveValue = (
     value: string | null | undefined
 ): string => {
+
     if (
         value === null ||
         value === undefined ||
@@ -64,12 +75,31 @@ const saveValue = (
 
 
 /*
- * Only Y stays Y.
- * Everything else becomes N.
+ * Only Y remains Y.
+ * Anything else becomes N.
  */
 const normalizeNabl = (
     value: string | null | undefined
 ): "Y" | "N" => {
+
+    return value
+        ?.trim()
+        .toUpperCase() === "Y"
+        ? "Y"
+        : "N";
+};
+
+
+/*
+ * HOD Review:
+ *
+ * Y => reviewed / locked
+ * anything else => not reviewed
+ */
+const normalizeHodReview = (
+    value: string | null | undefined
+): "Y" | "N" => {
+
     return value
         ?.trim()
         .toUpperCase() === "Y"
@@ -84,6 +114,7 @@ const normalizeNabl = (
 
 const ResultHtmlEditor = ({
     html,
+    disabled = false,
     onChange,
 }: ResultEditorProps) => {
 
@@ -91,7 +122,11 @@ const ResultHtmlEditor = ({
         useRef<HTMLDivElement>(null);
 
 
+    /*
+     * Load HTML coming from DB.
+     */
     useEffect(() => {
+
         if (!editorRef.current) {
             return;
         }
@@ -110,8 +145,15 @@ const ResultHtmlEditor = ({
     }, [html]);
 
 
+    /*
+     * Store Result as HTML.
+     */
     const handleInput = () => {
-        if (!editorRef.current) {
+
+        if (
+            disabled ||
+            !editorRef.current
+        ) {
             return;
         }
 
@@ -121,8 +163,15 @@ const ResultHtmlEditor = ({
     };
 
 
+    /*
+     * Blank Result becomes "-"
+     */
     const handleBlur = () => {
-        if (!editorRef.current) {
+
+        if (
+            disabled ||
+            !editorRef.current
+        ) {
             return;
         }
 
@@ -135,9 +184,6 @@ const ResultHtmlEditor = ({
                 .trim();
 
 
-        /*
-         * Blank Result becomes "-"
-         */
         if (
             visibleText === "" ||
             updatedHtml.trim() === ""
@@ -158,11 +204,36 @@ const ResultHtmlEditor = ({
     return (
         <div
             ref={editorRef}
-            className="result-editor"
-            contentEditable
+
+            className={
+                disabled
+                    ? "result-editor result-editor-disabled"
+                    : "result-editor"
+            }
+
+            contentEditable={
+                !disabled
+            }
+
             suppressContentEditableWarning
-            onInput={handleInput}
-            onBlur={handleBlur}
+
+            onInput={
+                disabled
+                    ? undefined
+                    : handleInput
+            }
+
+            onBlur={
+                disabled
+                    ? undefined
+                    : handleBlur
+            }
+
+            title={
+                disabled
+                    ? "HOD review completed. Editing is locked."
+                    : ""
+            }
         />
     );
 };
@@ -176,8 +247,9 @@ const ResultEntryPage = ({
     registrationNo: propRegistrationNo,
 }: Props) => {
 
+
     /* =====================================================
-       URL VALUES
+       URL PARAMETERS
     ===================================================== */
 
     const [
@@ -262,23 +334,37 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       BACK
+       HOD REVIEW CHECK
+    ===================================================== */
+
+    const isReviewed = (
+        row: ResultEntry
+    ): boolean => {
+
+        return normalizeHodReview(
+            row.hodReview
+        ) === "Y";
+    };
+
+
+    /* =====================================================
+       BACK BUTTON
     ===================================================== */
 
     const handleBack = () => {
 
         /*
-         * This works if senior's application
-         * opened this page in a new tab/window.
+         * Works when senior's application
+         * opened this page using window.open().
          */
         window.close();
 
 
         /*
-         * Some browsers do not allow JavaScript
-         * to close a tab that was opened manually.
+         * Browser may block window.close()
+         * when user manually opened the page.
          *
-         * In that case go back to previous page.
+         * Fallback to previous page.
          */
         setTimeout(() => {
 
@@ -369,7 +455,7 @@ const ResultEntryPage = ({
                             ),
 
                         /*
-                         * Preserve Result HTML
+                         * Result HTML is preserved.
                          */
                         result:
                             displayValue(
@@ -377,7 +463,7 @@ const ResultEntryPage = ({
                             ),
 
                         /*
-                         * Anything except Y becomes N
+                         * NABL only Y/N
                          */
                         nabl:
                             normalizeNabl(
@@ -393,6 +479,16 @@ const ResultEntryPage = ({
                             displayValue(
                                 row.refMethod
                             ),
+
+                        /*
+                         * HOD REVIEW
+                         *
+                         * Y => lock row.
+                         */
+                        hodReview:
+                            normalizeHodReview(
+                                row.hodReview
+                            ),
                     })
                 );
 
@@ -403,10 +499,10 @@ const ResultEntryPage = ({
 
 
             /*
-             * Save original copy.
+             * Store original values.
              *
              * Used for:
-             * - change detection
+             * - modified checking
              * - Cancel Changes
              */
             setOriginalRows(
@@ -507,6 +603,17 @@ const ResultEntryPage = ({
                         }
 
 
+                        /*
+                         * HOD reviewed row:
+                         * ignore any attempted modification.
+                         */
+                        if (
+                            isReviewed(row)
+                        ) {
+                            return row;
+                        }
+
+
                         return {
                             ...row,
 
@@ -528,18 +635,6 @@ const ResultEntryPage = ({
         html: string
     ) => {
 
-        /*
-         * HTML is intentionally preserved.
-         *
-         * Examples:
-         *
-         * <p> BLQ</p>
-         *
-         * <p> &lt;5</p>
-         *
-         * <p>R1 : Absent</p>
-         * <p>R2 : Present</p>
-         */
         handleChange(
             index,
             "result",
@@ -556,6 +651,17 @@ const ResultEntryPage = ({
         row: ResultEntry,
         index: number
     ) => {
+
+        /*
+         * Reviewed rows should never
+         * be treated as editable changes.
+         */
+        if (
+            isReviewed(row)
+        ) {
+            return false;
+        }
+
 
         const original =
             originalRows[index];
@@ -648,11 +754,11 @@ const ResultEntryPage = ({
 
         const restoredRows:
             ResultEntry[] =
-                JSON.parse(
-                    JSON.stringify(
-                        originalRows
-                    )
-                );
+            JSON.parse(
+                JSON.stringify(
+                    originalRows
+                )
+            );
 
 
         setRows(
@@ -670,22 +776,43 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       SAVE TO API
+       SAVE CHANGED ROWS
     ===================================================== */
 
     const saveChangedRows = async (
         changedRows: ResultEntry[]
     ) => {
 
-        /*
-         * User ID is required because
-         * backend stores audit information
-         * in TRN205.ADDR_REMK.
-         */
         if (!userIdFromUrl) {
 
             setError(
                 "User ID is missing. Unable to save changes."
+            );
+
+            return;
+        }
+
+
+        /*
+         * Defensive filtering:
+         *
+         * Even if something unexpected happened
+         * in frontend state, never send reviewed
+         * rows to update API.
+         */
+        const editableRows =
+            changedRows.filter(
+                (row) =>
+                    !isReviewed(row)
+            );
+
+
+        if (
+            editableRows.length === 0
+        ) {
+
+            setError(
+                "No editable rows are available to save."
             );
 
             return;
@@ -705,7 +832,7 @@ const ResultEntryPage = ({
 
                 userIdFromUrl,
 
-                changedRows.map(
+                editableRows.map(
                     (row) => ({
 
                         testCode:
@@ -737,7 +864,7 @@ const ResultEntryPage = ({
                             ),
 
                         /*
-                         * Keep Result HTML intact.
+                         * Preserve Result HTML
                          */
                         result:
                             saveValue(
@@ -764,7 +891,7 @@ const ResultEntryPage = ({
 
 
             /*
-             * Fetch saved values again.
+             * Reload database values.
              */
             await loadRegistration(
                 registrationNo
@@ -814,8 +941,8 @@ const ResultEntryPage = ({
 
 
         /*
-         * Force contentEditable Result
-         * to fire blur before save.
+         * Blur Result contentEditable
+         * so its latest HTML is captured.
          */
         if (
             document.activeElement
@@ -827,9 +954,6 @@ const ResultEntryPage = ({
         }
 
 
-        /*
-         * Wait one event loop for React state.
-         */
         await new Promise<void>(
             (resolve) => {
 
@@ -841,6 +965,11 @@ const ResultEntryPage = ({
         );
 
 
+        /*
+         * Reviewed rows are automatically
+         * excluded because isModified()
+         * returns false for them.
+         */
         const changedRows =
             rows.filter(
                 (
@@ -884,7 +1013,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       MANUAL LOADER
+       MANUAL REGISTRATION LOADER
     ===================================================== */
 
     const showManualRegistrationLoader =
@@ -893,7 +1022,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       JSX
+       UI
     ===================================================== */
 
     return (
@@ -902,7 +1031,7 @@ const ResultEntryPage = ({
 
 
             {/* =============================================
-                HEADER
+                EFRAC HEADER
             ============================================= */}
 
             <header className="efrac-banner">
@@ -923,7 +1052,9 @@ const ResultEntryPage = ({
 
                 <button
                     type="button"
+
                     className="back-button"
+
                     onClick={
                         handleBack
                     }
@@ -937,8 +1068,7 @@ const ResultEntryPage = ({
             {/* =============================================
                 MANUAL REGISTRATION
 
-                Only for testing when registration
-                is not supplied through URL.
+                Only visible during manual testing.
             ============================================= */}
 
             {showManualRegistrationLoader && (
@@ -1061,6 +1191,9 @@ const ResultEntryPage = ({
 
                         <table className="result-table">
 
+
+                            {/* TABLE HEADER */}
+
                             <thead>
 
                                 <tr>
@@ -1114,6 +1247,8 @@ const ResultEntryPage = ({
                             </thead>
 
 
+                            {/* TABLE BODY */}
+
                             <tbody>
 
                                 {rows.map(
@@ -1121,6 +1256,12 @@ const ResultEntryPage = ({
                                         row,
                                         index
                                     ) => {
+
+                                        const reviewed =
+                                            isReviewed(
+                                                row
+                                            );
+
 
                                         const modified =
                                             isModified(
@@ -1137,8 +1278,16 @@ const ResultEntryPage = ({
                                                 }
 
                                                 className={
-                                                    modified
-                                                        ? "modified-row"
+                                                    reviewed
+                                                        ? "reviewed-row"
+                                                        : modified
+                                                            ? "modified-row"
+                                                            : ""
+                                                }
+
+                                                title={
+                                                    reviewed
+                                                        ? "HOD review completed. Editing is locked."
                                                         : ""
                                                 }
                                             >
@@ -1183,6 +1332,10 @@ const ResultEntryPage = ({
                                                             row.methodCode
                                                         }
 
+                                                        disabled={
+                                                            reviewed
+                                                        }
+
                                                         onChange={(
                                                             e
                                                         ) =>
@@ -1206,6 +1359,10 @@ const ResultEntryPage = ({
 
                                                         value={
                                                             row.method
+                                                        }
+
+                                                        disabled={
+                                                            reviewed
                                                         }
 
                                                         onChange={(
@@ -1233,6 +1390,10 @@ const ResultEntryPage = ({
                                                             row.unit
                                                         }
 
+                                                        disabled={
+                                                            reviewed
+                                                        }
+
                                                         onChange={(
                                                             e
                                                         ) =>
@@ -1256,6 +1417,10 @@ const ResultEntryPage = ({
 
                                                         value={
                                                             row.instrument
+                                                        }
+
+                                                        disabled={
+                                                            reviewed
                                                         }
 
                                                         onChange={(
@@ -1283,6 +1448,10 @@ const ResultEntryPage = ({
                                                             row.loq
                                                         }
 
+                                                        disabled={
+                                                            reviewed
+                                                        }
+
                                                         onChange={(
                                                             e
                                                         ) =>
@@ -1304,6 +1473,10 @@ const ResultEntryPage = ({
                                                     <ResultHtmlEditor
                                                         html={
                                                             row.result
+                                                        }
+
+                                                        disabled={
+                                                            reviewed
                                                         }
 
                                                         onChange={(
@@ -1328,6 +1501,10 @@ const ResultEntryPage = ({
                                                             normalizeNabl(
                                                                 row.nabl
                                                             )
+                                                        }
+
+                                                        disabled={
+                                                            reviewed
                                                         }
 
                                                         onChange={(
@@ -1365,6 +1542,10 @@ const ResultEntryPage = ({
                                                             row.spec
                                                         }
 
+                                                        disabled={
+                                                            reviewed
+                                                        }
+
                                                         onChange={(
                                                             e
                                                         ) =>
@@ -1388,6 +1569,10 @@ const ResultEntryPage = ({
 
                                                         value={
                                                             row.refMethod
+                                                        }
+
+                                                        disabled={
+                                                            reviewed
                                                         }
 
                                                         onChange={(

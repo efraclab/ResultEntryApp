@@ -16,6 +16,7 @@ export interface ResultEntry {
     nabl: string;
     spec: string;
     refMethod: string;
+    hodReview: string;
 }
 
 export interface UpdateResultRow {

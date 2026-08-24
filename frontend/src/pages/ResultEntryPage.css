@@ -4,8 +4,7 @@
 
 
 /* ==========================================
-   IMPORTANT:
-   Remove browser/root gaps
+   PAGE / ROOT
 ========================================== */
 
 html,
@@ -31,6 +30,7 @@ body {
         sans-serif;
 
     background: #ffffff;
+
     color: #222222;
 }
 
@@ -58,14 +58,11 @@ body {
 
     background: #ffffff;
 
-    border: 0;
-    outline: 0;
+    border: none;
+    outline: none;
 
     overflow: hidden;
 
-    /*
-     * Removes small inline-image baseline gap.
-     */
     line-height: 0;
 }
 
@@ -79,8 +76,8 @@ body {
     margin: 0;
     padding: 0;
 
-    border: 0;
-    outline: 0;
+    border: none;
+    outline: none;
 
     object-fit: contain;
     object-position: left top;
@@ -104,13 +101,14 @@ body {
 
     background: #f4f4f4;
 
-    border: 0;
+    border: none;
+
     border-bottom:
         1px solid #c7d4e3;
 }
 
 
-/* BACK BUTTON */
+/* BACK */
 
 .back-button {
     min-width: 75px;
@@ -145,7 +143,7 @@ body {
 
 
 /* ==========================================
-   TEMPORARY REGISTRATION LOADER
+   MANUAL REGISTRATION
 ========================================== */
 
 .registration-loader {
@@ -312,7 +310,7 @@ body {
 }
 
 
-/* HEADER */
+/* TABLE HEADER */
 
 .result-table thead th {
     padding: 6px;
@@ -338,7 +336,7 @@ body {
 }
 
 
-/* BODY */
+/* TABLE BODY */
 
 .result-table tbody td {
     padding: 3px 5px;
@@ -353,7 +351,9 @@ body {
 }
 
 
-/* ALTERNATE ROWS */
+/* ==========================================
+   NORMAL ALTERNATE ROWS
+========================================== */
 
 .result-table tbody tr:nth-child(odd) td {
     background: #ffffff;
@@ -365,14 +365,16 @@ body {
 }
 
 
-/* HOVER */
+/* HOVER NORMAL ROW */
 
-.result-table tbody tr:hover td {
+.result-table tbody tr:not(.reviewed-row):hover td {
     background: #c9ddf9;
 }
 
 
-/* MODIFIED */
+/* ==========================================
+   MODIFIED ROW
+========================================== */
 
 .result-table tbody tr.modified-row td {
     background: #fff5cf;
@@ -380,13 +382,44 @@ body {
 
 
 /* ==========================================
-   READ ONLY
+   HOD REVIEWED ROW
+========================================== */
+
+/*
+ * TRN2HODREVIEW = Y
+ *
+ * Entire row becomes visually locked.
+ */
+.result-table tbody tr.reviewed-row td {
+    background: #eeeeee !important;
+
+    color: #666666;
+}
+
+
+/*
+ * Small left indicator makes reviewed
+ * rows easier to identify.
+ */
+.result-table tbody tr.reviewed-row td:first-child {
+    border-left:
+        4px solid #8c8c8c;
+}
+
+
+/* ==========================================
+   READ ONLY CELLS
 ========================================== */
 
 .readonly-cell {
     color: #222222;
 
     font-weight: 600;
+}
+
+
+.reviewed-row .readonly-cell {
+    color: #666666;
 }
 
 
@@ -437,8 +470,8 @@ body {
 }
 
 
-.result-table input:hover,
-.result-table select:hover {
+.result-table input:hover:not(:disabled),
+.result-table select:hover:not(:disabled) {
     border-color: #6f9ed8;
 }
 
@@ -451,6 +484,24 @@ body {
 
     outline:
         1px solid #1767d2;
+}
+
+
+/* ==========================================
+   DISABLED / REVIEWED INPUTS
+========================================== */
+
+.result-table input:disabled,
+.result-table select:disabled {
+    background: #e7e7e7;
+
+    border-color: #c4c4c4;
+
+    color: #686868;
+
+    cursor: not-allowed;
+
+    opacity: 1;
 }
 
 
@@ -583,7 +634,7 @@ body {
 }
 
 
-.result-editor:hover {
+.result-editor:hover:not(.result-editor-disabled) {
     border-color: #6f9ed8;
 }
 
@@ -598,8 +649,26 @@ body {
 }
 
 
-/* Existing DB <p> */
+/* ==========================================
+   REVIEWED RESULT
+========================================== */
 
+.result-editor-disabled {
+    background: #e7e7e7 !important;
+
+    border-color: #c4c4c4;
+
+    color: #686868;
+
+    cursor: not-allowed;
+
+    user-select: text;
+}
+
+
+/*
+ * Existing DB paragraph HTML
+ */
 .result-editor p {
     margin: 0;
 
@@ -609,8 +678,11 @@ body {
 }
 
 
-/* Preserve R<sub>f</sub> */
-
+/*
+ * Existing HTML:
+ *
+ * R<sub>f</sub>
+ */
 .result-editor sub {
     font-size: 75%;
 
@@ -651,7 +723,7 @@ body {
 
 
 /* ==========================================
-   CANCEL
+   CANCEL BUTTON
 ========================================== */
 
 .cancel-button {
@@ -692,7 +764,7 @@ body {
 
 
 /* ==========================================
-   SAVE
+   SAVE BUTTON
 ========================================== */
 
 .save-button {
