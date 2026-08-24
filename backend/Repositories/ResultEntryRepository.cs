@@ -8,20 +8,32 @@ namespace ResultEntryApi.Repositories
     {
         private readonly string _connectionString;
 
-        public ResultEntryRepository(IConfiguration configuration)
+        public ResultEntryRepository(
+            IConfiguration configuration
+        )
         {
             _connectionString =
-                configuration.GetConnectionString("DefaultConnection")
+                configuration.GetConnectionString(
+                    "DefaultConnection"
+                )
                 ?? throw new Exception(
                     "DefaultConnection connection string not found."
                 );
         }
 
-        public async Task<List<ResultEntryDto>> GetByRegistrationAsync(
-            string registrationNo
-        )
+
+        // =====================================================
+        // GET BY REGISTRATION
+        // =====================================================
+
+        public async Task<List<ResultEntryDto>>
+            GetByRegistrationAsync(
+                string registrationNo
+            )
         {
-            var results = new List<ResultEntryDto>();
+            var results =
+                new List<ResultEntryDto>();
+
 
             const string sql = @"
                 SELECT
@@ -44,114 +56,194 @@ namespace ResultEntryApi.Repositories
                 ORDER BY TRN2HEADER;
             ";
 
+
             await using var connection =
-                new SqlConnection(_connectionString);
+                new SqlConnection(
+                    _connectionString
+                );
 
             await connection.OpenAsync();
 
+
             await using var command =
-                new SqlCommand(sql, connection);
+                new SqlCommand(
+                    sql,
+                    connection
+                );
+
 
             command.Parameters.Add(
                 "@RegistrationNo",
                 SqlDbType.VarChar
             ).Value = registrationNo;
 
+
             await using var reader =
-                await command.ExecuteReaderAsync();
+                await command
+                    .ExecuteReaderAsync();
 
-            while (await reader.ReadAsync())
+
+            while (
+                await reader.ReadAsync()
+            )
             {
-                results.Add(new ResultEntryDto
-                {
-                    RegistrationNo =
-                        reader["TRN2REFNO"] == DBNull.Value
-                            ? null
-                            : reader["TRN2REFNO"].ToString(),
+                results.Add(
+                    new ResultEntryDto
+                    {
+                        RegistrationNo =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2REFNO"
+                                ]
+                            ),
 
-                    TestCode =
-                        reader["TRN2HEADER"] == DBNull.Value
-                            ? null
-                            : reader["TRN2HEADER"].ToString(),
+                        TestCode =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2HEADER"
+                                ]
+                            ),
 
-                    MethodCode =
-                        reader["TRN2_METHDO_DTL"] == DBNull.Value
-                            ? null
-                            : reader["TRN2_METHDO_DTL"].ToString(),
+                        MethodCode =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2_METHDO_DTL"
+                                ]
+                            ),
 
-                    Method =
-                        reader["TRN2METHOD"] == DBNull.Value
-                            ? null
-                            : reader["TRN2METHOD"].ToString(),
+                        Method =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2METHOD"
+                                ]
+                            ),
 
-                    Unit =
-                        reader["TRN2OUTSTR"] == DBNull.Value
-                            ? null
-                            : reader["TRN2OUTSTR"].ToString(),
+                        Unit =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2OUTSTR"
+                                ]
+                            ),
 
-                    Instrument =
-                        reader["TRN2INSTNO"] == DBNull.Value
-                            ? null
-                            : reader["TRN2INSTNO"].ToString(),
+                        Instrument =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2INSTNO"
+                                ]
+                            ),
 
-                    LOQ =
-                        reader["TRN2LOQ"] == DBNull.Value
-                            ? null
-                            : reader["TRN2LOQ"].ToString(),
+                        LOQ =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2LOQ"
+                                ]
+                            ),
 
-                    Result =
-                        reader["TRN2INPUT"] == DBNull.Value
-                            ? null
-                            : reader["TRN2INPUT"].ToString(),
+                        /*
+                         * IMPORTANT:
+                         * Existing Result HTML is preserved.
+                         *
+                         * Example:
+                         * <p> &lt;5</p>
+                         */
+                        Result =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2INPUT"
+                                ]
+                            ),
 
-                    NABL =
-                        reader["TRN2NABLYN"] == DBNull.Value
-                            ? null
-                            : reader["TRN2NABLYN"].ToString(),
+                        /*
+                         * NABL:
+                         *
+                         * Y -> Y
+                         * everything else -> N
+                         */
+                        NABL =
+                            NormalizeNabl(
+                                reader[
+                                    "TRN2NABLYN"
+                                ]
+                            ),
 
-                    Spec =
-                        reader["TRN2HEADSPEC"] == DBNull.Value
-                            ? null
-                            : reader["TRN2HEADSPEC"].ToString(),
+                        Spec =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2HEADSPEC"
+                                ]
+                            ),
 
-                    RefMethod =
-                        reader["TRN2REFMETHOD"] == DBNull.Value
-                            ? null
-                            : reader["TRN2REFMETHOD"].ToString(),
+                        RefMethod =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2REFMETHOD"
+                                ]
+                            ),
 
-                    Out =
-                        reader["TRN2OUT"] == DBNull.Value
-                            ? null
-                            : reader["TRN2OUT"].ToString(),
+                        /*
+                         * These values can still be
+                         * returned by backend.
+                         *
+                         * They are simply not shown
+                         * on frontend.
+                         */
+                        Out =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2OUT"
+                                ]
+                            ),
 
-                    Data =
-                        reader["TRN2DATA"] == DBNull.Value
-                            ? null
-                            : reader["TRN2DATA"].ToString(),
+                        Data =
+                            GetDisplayValue(
+                                reader[
+                                    "TRN2DATA"
+                                ]
+                            ),
 
-                    AnalystTestDate =
-                        reader["TRN2AnlstTestDt"] == DBNull.Value
-                            ? null
-                            : Convert.ToDateTime(
-                                reader["TRN2AnlstTestDt"]
-                            )
-                });
+                        AnalystTestDate =
+                            reader[
+                                "TRN2AnlstTestDt"
+                            ] == DBNull.Value
+
+                                ? null
+
+                                : Convert.ToDateTime(
+                                    reader[
+                                        "TRN2AnlstTestDt"
+                                    ]
+                                )
+                    }
+                );
             }
+
 
             return results;
         }
 
-        public async Task<bool> UpdateResultsAsync(
-            UpdateResultRequest request
-        )
+
+        // =====================================================
+        // UPDATE
+        // =====================================================
+
+        public async Task<bool>
+            UpdateResultsAsync(
+                UpdateResultRequest request
+            )
         {
             await using var connection =
-                new SqlConnection(_connectionString);
+                new SqlConnection(
+                    _connectionString
+                );
+
 
             await connection.OpenAsync();
 
+
             await using var transaction =
-                await connection.BeginTransactionAsync();
+                await connection
+                    .BeginTransactionAsync();
+
 
             try
             {
@@ -170,6 +262,20 @@ namespace ResultEntryApi.Repositories
 
                         TRN2AnlstTestDt = GETDATE(),
 
+                        ADDR_REMK =
+    CASE
+        WHEN ADDR_REMK IS NULL
+             OR LTRIM(RTRIM(ADDR_REMK)) = ''
+        THEN
+            @UserId + ' | ' +
+            CONVERT(VARCHAR(19), GETDATE(), 120)
+
+        ELSE
+            ADDR_REMK +
+            ' ; ' +
+            @UserId + ' | ' +
+            CONVERT(VARCHAR(19), GETDATE(), 120)
+    END,
                         TRN2NABLYN = @NABL,
                         TRN2OUTSTR = @Unit,
                         TRN2METHOD = @Method,
@@ -179,83 +285,152 @@ namespace ResultEntryApi.Repositories
                     AND TRN2HEADER = @TestCode;
                 ";
 
-                foreach (var row in request.Rows)
+
+                foreach (
+                    var row in request.Rows
+                )
                 {
                     await using var command =
                         new SqlCommand(
                             sql,
                             connection,
-                            (SqlTransaction)transaction
+                            (SqlTransaction)
+                                transaction
                         );
 
-                    AddNullableStringParameter(
+
+                    // =============================
+                    // Editable fields
+                    //
+                    // Blank => "-"
+                    // =============================
+
+                    AddStringParameter(
                         command,
                         "@LOQ",
-                        row.LOQ
+                        NormalizeValue(
+                            row.LOQ
+                        )
                     );
 
-                    AddNullableStringParameter(
+
+                    AddStringParameter(
                         command,
                         "@Instrument",
-                        row.Instrument
+                        NormalizeValue(
+                            row.Instrument
+                        )
                     );
 
-                    AddNullableStringParameter(
+
+                    /*
+                     * Result HTML is NOT stripped.
+                     *
+                     * Existing HTML stays intact.
+                     *
+                     * Blank => "-"
+                     */
+                    AddStringParameter(
                         command,
                         "@Result",
-                        row.Result
+                        NormalizeValue(
+                            row.Result,
+                            trimValue: false
+                        )
                     );
 
-                    AddNullableStringParameter(
+
+                    AddStringParameter(
                         command,
                         "@Spec",
-                        row.Spec
+                        NormalizeValue(
+                            row.Spec
+                        )
                     );
 
-                    AddNullableStringParameter(
+
+                    AddStringParameter(
                         command,
                         "@RefMethod",
-                        row.RefMethod
+                        NormalizeValue(
+                            row.RefMethod
+                        )
                     );
 
-                    AddNullableStringParameter(
+
+                    /*
+                     * NABL is guaranteed to be
+                     * either Y or N.
+                     */
+                    AddStringParameter(
                         command,
                         "@NABL",
-                        row.NABL
+                        NormalizeNabl(
+                            row.NABL
+                        )
                     );
 
-                    AddNullableStringParameter(
+
+                    AddStringParameter(
                         command,
                         "@Unit",
-                        row.Unit
+                        NormalizeValue(
+                            row.Unit
+                        )
                     );
 
-                    AddNullableStringParameter(
+
+                    AddStringParameter(
                         command,
                         "@Method",
-                        row.Method
+                        NormalizeValue(
+                            row.Method
+                        )
                     );
 
-                    AddNullableStringParameter(
+
+                    AddStringParameter(
                         command,
                         "@MethodCode",
-                        row.MethodCode
+                        NormalizeValue(
+                            row.MethodCode
+                        )
                     );
+
+
+                    // =============================
+                    // WHERE
+                    // =============================
 
                     command.Parameters.Add(
                         "@RegistrationNo",
                         SqlDbType.VarChar
-                    ).Value = request.RegistrationNo;
+                    ).Value =
+                        request
+                            .RegistrationNo
+                            .Trim();
+
 
                     command.Parameters.Add(
                         "@TestCode",
                         SqlDbType.VarChar
-                    ).Value = row.TestCode;
+                    ).Value =
+                        row.TestCode.Trim();
+
+                    command.Parameters.Add(
+                                "@UserId",
+                                SqlDbType.VarChar
+                                ).Value = request.UserId;
+
 
                     var affectedRows =
-                        await command.ExecuteNonQueryAsync();
+                        await command
+                            .ExecuteNonQueryAsync();
 
-                    if (affectedRows == 0)
+
+                    if (
+                        affectedRows == 0
+                    )
                     {
                         throw new Exception(
                             $"No row found for Registration No: {request.RegistrationNo}, Test Code: {row.TestCode}"
@@ -263,22 +438,172 @@ namespace ResultEntryApi.Repositories
                     }
                 }
 
-                await transaction.CommitAsync();
+
+                await transaction
+                    .CommitAsync();
+
 
                 return true;
             }
             catch
             {
-                await transaction.RollbackAsync();
+                await transaction
+                    .RollbackAsync();
+
                 throw;
             }
         }
 
-        private static void AddNullableStringParameter(
-            SqlCommand command,
-            string parameterName,
-            string? value
-        )
+
+        // =====================================================
+        // DISPLAY VALUE
+        // =====================================================
+
+        /*
+         * Database:
+         *
+         * NULL       => "-"
+         * ""         => "-"
+         * "   "      => "-"
+         *
+         * Everything else is returned unchanged.
+         *
+         * This is especially important for Result HTML.
+         */
+        private static string
+            GetDisplayValue(
+                object value
+            )
+        {
+            if (
+                value == DBNull.Value
+            )
+            {
+                return "-";
+            }
+
+
+            var text =
+                value.ToString();
+
+
+            if (
+                string.IsNullOrWhiteSpace(
+                    text
+                )
+            )
+            {
+                return "-";
+            }
+
+
+            return text;
+        }
+
+
+        // =====================================================
+        // NORMALIZE SAVE VALUE
+        // =====================================================
+
+        /*
+         * Blank values must NOT become NULL.
+         *
+         * They become:
+         *
+         * -
+         */
+        private static string
+            NormalizeValue(
+                string? value,
+                bool trimValue = true
+            )
+        {
+            if (
+                string.IsNullOrWhiteSpace(
+                    value
+                )
+            )
+            {
+                return "-";
+            }
+
+
+            if (trimValue)
+            {
+                return value.Trim();
+            }
+
+
+            /*
+             * Result HTML:
+             *
+             * Don't Trim() the actual HTML.
+             * We want to preserve the existing
+             * Result formatting.
+             */
+            return value;
+        }
+
+
+        // =====================================================
+        // NABL
+        // =====================================================
+
+        private static string
+            NormalizeNabl(
+                object value
+            )
+        {
+            if (
+                value == DBNull.Value
+            )
+            {
+                return "N";
+            }
+
+
+            return NormalizeNabl(
+                value.ToString()
+            );
+        }
+
+
+        private static string
+            NormalizeNabl(
+                string? value
+            )
+        {
+            /*
+             * ONLY Y is accepted as Y.
+             *
+             * N        => N
+             * NULL     => N
+             * ""       => N
+             * "-"      => N
+             * ABC      => N
+             * YES      => N
+             */
+            return string.Equals(
+                value?.Trim(),
+                "Y",
+                StringComparison
+                    .OrdinalIgnoreCase
+            )
+                ? "Y"
+                : "N";
+        }
+
+
+        // =====================================================
+        // SQL PARAMETER
+        // =====================================================
+
+        private static void
+            AddStringParameter(
+                SqlCommand command,
+                string parameterName,
+                string value
+            )
         {
             var parameter =
                 command.Parameters.Add(
@@ -286,10 +611,18 @@ namespace ResultEntryApi.Repositories
                     SqlDbType.VarChar
                 );
 
+
+            /*
+             * IMPORTANT:
+             *
+             * We no longer use DBNull.Value
+             * for editable fields.
+             *
+             * Blank has already been
+             * converted to "-".
+             */
             parameter.Value =
-                string.IsNullOrWhiteSpace(value)
-                    ? DBNull.Value
-                    : value.Trim();
+                value;
         }
     }
 }

@@ -4,6 +4,8 @@ namespace ResultEntryApi.Models
     {
         public string RegistrationNo { get; set; } = string.Empty;
 
+        public string UserId { get; set; } = string.Empty;
+
         public List<UpdateResultRowDto> Rows { get; set; } = new();
     }
 

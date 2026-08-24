@@ -22,6 +22,7 @@ body {
     background: #ffffff;
 }
 
+
 /* ================================
    EFRAC HEADER
 ================================ */
@@ -42,6 +43,7 @@ body {
     object-fit: contain;
     object-position: left center;
 }
+
 
 /* ================================
    TEMPORARY REGISTRATION LOADER
@@ -71,11 +73,21 @@ body {
 
     padding: 3px 6px;
 
-    border: 1px solid #9d9d9d;
+    border: 1px solid #9db9df;
     border-radius: 0;
+
+    background: #ffffff;
+    color: #174f91;
 
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
+
+    outline: none;
+}
+
+.registration-loader input:focus {
+    border-color: #1767d2;
+    outline: 1px solid #1767d2;
 }
 
 .registration-loader button {
@@ -93,7 +105,7 @@ body {
     font-weight: 700;
 }
 
-.registration-loader button:hover {
+.registration-loader button:hover:not(:disabled) {
     background: #094da8;
 }
 
@@ -102,16 +114,18 @@ body {
     cursor: not-allowed;
 }
 
+
 /* ================================
    MESSAGES
 ================================ */
 
 .error-message,
 .success-message {
-    padding: 7px 10px;
+    padding: 8px 12px;
     margin: 5px 0;
 
     font-size: 12px;
+    font-weight: 600;
 }
 
 .error-message {
@@ -126,6 +140,7 @@ body {
     color: #267030;
 }
 
+
 /* ================================
    TABLE SCROLL
 ================================ */
@@ -135,6 +150,7 @@ body {
     overflow-x: auto;
     overflow-y: visible;
 }
+
 
 /* ================================
    RESULT TABLE
@@ -149,6 +165,7 @@ body {
 
     font-size: 12px;
 }
+
 
 /* HEADER */
 
@@ -170,6 +187,7 @@ body {
     white-space: nowrap;
 }
 
+
 /* BODY */
 
 .result-table tbody td {
@@ -181,6 +199,7 @@ body {
     vertical-align: middle;
 }
 
+
 /* Alternate rows */
 
 .result-table tbody tr:nth-child(odd) td {
@@ -191,17 +210,20 @@ body {
     background: #dce9fa;
 }
 
+
 /* Hover */
 
 .result-table tbody tr:hover td {
     background: #c9ddf9;
 }
 
+
 /* Modified row */
 
 .result-table tbody tr.modified-row td {
     background: #fff5cf;
 }
+
 
 /* ================================
    READ ONLY CELLS
@@ -222,8 +244,9 @@ body {
     white-space: nowrap;
 }
 
+
 /* ================================
-   INPUTS
+   EDITABLE INPUTS
 ================================ */
 
 .result-table input,
@@ -234,23 +257,46 @@ body {
 
     padding: 3px 5px;
 
-    border: 1px solid #a4a4a4;
+    border: 1px solid #9db9df;
     border-radius: 0;
 
-    background: #ffffff;
-    color: #222222;
+    background: #f8fbff;
+
+    /* Editable text should not look black */
+    color: #174f91;
 
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
+    font-weight: 500;
 
     outline: none;
 }
 
+.result-table input:hover,
+.result-table select:hover {
+    border-color: #6f9ed8;
+}
+
 .result-table input:focus,
 .result-table select:focus {
+    background: #ffffff;
+
     border-color: #1767d2;
     outline: 1px solid #1767d2;
 }
+
+
+/* ================================
+   NABL
+================================ */
+
+.result-table select {
+    cursor: pointer;
+
+    font-weight: 700;
+    text-align: center;
+}
+
 
 /* ================================
    COLUMN WIDTHS
@@ -293,7 +339,7 @@ body {
 
 .result-table th:nth-child(8),
 .result-table td:nth-child(8) {
-    min-width: 170px;
+    min-width: 220px;
 }
 
 .result-table th:nth-child(9),
@@ -311,15 +357,95 @@ body {
     min-width: 180px;
 }
 
+
 /* ================================
-   SAVE AREA
+   RESULT HTML EDITOR
+================================ */
+
+.result-cell {
+    min-width: 220px;
+    vertical-align: top;
+}
+
+.result-editor {
+    width: 100%;
+    min-width: 210px;
+    min-height: 28px;
+
+    padding: 4px 6px;
+
+    border: 1px solid #9db9df;
+
+    background: #f8fbff;
+    color: #174f91;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+
+    outline: none;
+
+    white-space: normal;
+    overflow-wrap: break-word;
+
+    cursor: text;
+}
+
+.result-editor:hover {
+    border-color: #6f9ed8;
+}
+
+.result-editor:focus {
+    border-color: #1767d2;
+    outline: 1px solid #1767d2;
+
+    background: #ffffff;
+}
+
+
+/* Keep multiple <p> values compact */
+
+.result-editor p {
+    margin: 0;
+    padding: 0;
+
+    min-height: 18px;
+}
+
+
+/* Preserve things like R<sub>f</sub> */
+
+.result-editor sub {
+    font-size: 75%;
+    vertical-align: sub;
+}
+
+
+/* Empty editor helper */
+
+.result-editor:empty::before {
+    content: "Enter result";
+
+    color: #8296ad;
+
+    pointer-events: none;
+}
+
+
+/* ================================
+   ACTION AREA
 ================================ */
 
 .save-area {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
 
     padding: 10px;
 
@@ -329,12 +455,52 @@ body {
 }
 
 .change-info {
+    margin-right: auto;
+
     font-size: 12px;
+    font-weight: 600;
     color: #555555;
 }
 
+
+/* ================================
+   CANCEL BUTTON
+================================ */
+
+.cancel-button {
+    min-width: 125px;
+    height: 30px;
+
+    padding: 0 16px;
+
+    border: 1px solid #777777;
+    background: #ffffff;
+
+    color: #333333;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.cancel-button:hover:not(:disabled) {
+    background: #eeeeee;
+}
+
+.cancel-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* ================================
+   SAVE BUTTON
+================================ */
+
 .save-button {
-    min-width: 120px;
+    min-width: 125px;
     height: 30px;
 
     padding: 0 16px;
@@ -351,7 +517,7 @@ body {
     cursor: pointer;
 }
 
-.save-button:hover {
+.save-button:hover:not(:disabled) {
     background: #094da8;
 }
 
@@ -362,14 +528,12 @@ body {
     cursor: not-allowed;
 }
 
+
 /* ================================
    MOBILE
 ================================ */
 
 @media (max-width: 900px) {
-    .efrac-banner {
-        height: 110px;
-    }
 
     .registration-loader {
         flex-wrap: wrap;
@@ -377,5 +541,14 @@ body {
 
     .registration-loader input {
         width: 250px;
+    }
+
+    .save-area {
+        flex-wrap: wrap;
+    }
+
+    .change-info {
+        width: 100%;
+        margin-right: 0;
     }
 }

@@ -15,7 +15,9 @@ namespace ResultEntryApi.Models
         public string? Spec { get; set; }
         public string? RefMethod { get; set; }
 
-        // Visible but read-only in frontend
+        // Backend-only fields.
+        // These values are fetched from TRN205
+        // but are not displayed on the frontend.
         public string? Out { get; set; }
         public string? Data { get; set; }
         public DateTime? AnalystTestDate { get; set; }

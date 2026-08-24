@@ -61,6 +61,7 @@ export const getResultsByRegistration = async (
 
 export const updateResults = async (
     registrationNo: string,
+    userId: string,
     rows: UpdateResultRow[]
 ): Promise<UpdateResultsResponse> => {
     const response =
@@ -68,6 +69,7 @@ export const updateResults = async (
             `${API_BASE_URL}/result-entry`,
             {
                 registrationNo,
+                userId,
                 rows,
             }
         );

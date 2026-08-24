@@ -3,7 +3,8 @@ using ResultEntryApi.Repositories;
 
 namespace ResultEntryApi.Services
 {
-    public class ResultEntryService : IResultEntryService
+    public class ResultEntryService
+        : IResultEntryService
     {
         private readonly IResultEntryRepository _repository;
 
@@ -19,9 +20,7 @@ namespace ResultEntryApi.Services
                 string registrationNo
             )
         {
-            if (string.IsNullOrWhiteSpace(
-                registrationNo
-            ))
+            if (string.IsNullOrWhiteSpace(registrationNo))
             {
                 throw new ArgumentException(
                     "Registration number is required."
@@ -54,13 +53,30 @@ namespace ResultEntryApi.Services
                 );
             }
 
-            if (request.Rows == null ||
-                request.Rows.Count == 0)
+            if (string.IsNullOrWhiteSpace(
+                request.UserId
+            ))
+            {
+                throw new ArgumentException(
+                    "User ID is required for saving changes."
+                );
+            }
+
+            if (
+                request.Rows == null ||
+                request.Rows.Count == 0
+            )
             {
                 throw new ArgumentException(
                     "No rows provided for update."
                 );
             }
+
+            request.RegistrationNo =
+                request.RegistrationNo.Trim();
+
+            request.UserId =
+                request.UserId.Trim();
 
             foreach (var row in request.Rows)
             {
@@ -72,6 +88,21 @@ namespace ResultEntryApi.Services
                         "Test Code is required for every row."
                     );
                 }
+
+                row.TestCode =
+                    row.TestCode.Trim();
+
+                // NABL:
+                // Only Y is Y.
+                // Everything else becomes N.
+                row.NABL =
+                    string.Equals(
+                        row.NABL?.Trim(),
+                        "Y",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                        ? "Y"
+                        : "N";
             }
 
             return await _repository
