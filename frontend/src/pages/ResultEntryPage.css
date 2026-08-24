@@ -28,18 +28,19 @@ body {
 
 .efrac-banner {
     width: 100%;
-    height: 185px;
-    overflow: hidden;
     background: #ffffff;
+    overflow: hidden;
     border-bottom: 1px solid #b4b4b4;
 }
 
 .efrac-banner img {
-    width: 100%;
-    height: 100%;
     display: block;
-    object-fit: cover;
-    object-position: center;
+
+    width: 100%;
+    height: auto;
+
+    object-fit: contain;
+    object-position: left center;
 }
 
 /* ================================
