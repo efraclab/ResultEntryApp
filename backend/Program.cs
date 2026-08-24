@@ -30,11 +30,16 @@ builder.Services.AddCors(options =>
         {
             policy
                 .WithOrigins(
-                    "http://localhost:5173",
-                    "http://localhost:5174",
-                    "http://localhost:5175",
-                    "http://localhost:5176"
-                )
+    // Local development
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+
+    // Remote server
+    "http://localhost:5185",
+    "http://192.168.2.220:5185"
+)
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }
