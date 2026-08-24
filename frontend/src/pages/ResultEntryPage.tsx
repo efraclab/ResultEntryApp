@@ -18,18 +18,10 @@ import {
 import "./ResultEntryPage.css";
 
 
-/* =========================================================
-   PROPS
-========================================================= */
-
 interface Props {
     registrationNo?: string;
 }
 
-
-/* =========================================================
-   RESULT EDITOR PROPS
-========================================================= */
 
 interface ResultEditorProps {
     html: string;
@@ -41,10 +33,6 @@ interface ResultEditorProps {
    COMMON VALUE RULES
 ========================================================= */
 
-/*
- * NULL / undefined / blank from database
- * should display as "-"
- */
 const displayValue = (
     value: string | null | undefined
 ): string => {
@@ -60,11 +48,6 @@ const displayValue = (
 };
 
 
-/*
- * Before saving:
- *
- * blank / spaces only => "-"
- */
 const saveValue = (
     value: string | null | undefined
 ): string => {
@@ -81,13 +64,8 @@ const saveValue = (
 
 
 /*
- * NABL rule:
- *
- * Only:
- * Y
- * N
- *
- * Anything other than Y becomes N.
+ * Only Y stays Y.
+ * Everything else becomes N.
  */
 const normalizeNabl = (
     value: string | null | undefined
@@ -108,64 +86,41 @@ const ResultHtmlEditor = ({
     html,
     onChange,
 }: ResultEditorProps) => {
+
     const editorRef =
         useRef<HTMLDivElement>(null);
 
 
-    /*
-     * Put DB HTML into contentEditable.
-     *
-     * Example:
-     *
-     * DB:
-     * <p>   &lt;5</p>
-     *
-     * User sees:
-     * <5
-     */
     useEffect(() => {
         if (!editorRef.current) {
             return;
         }
 
-        const currentHtml =
-            editorRef.current.innerHTML;
-
         const incomingHtml =
             html || "";
 
         if (
-            currentHtml !==
+            editorRef.current.innerHTML !==
             incomingHtml
         ) {
             editorRef.current.innerHTML =
                 incomingHtml;
         }
+
     }, [html]);
 
 
-    /*
-     * Update React state while user edits.
-     *
-     * We store innerHTML, NOT innerText,
-     * because TRN2INPUT uses HTML.
-     */
     const handleInput = () => {
         if (!editorRef.current) {
             return;
         }
 
-        const updatedHtml =
-            editorRef.current.innerHTML;
-
-        onChange(updatedHtml);
+        onChange(
+            editorRef.current.innerHTML
+        );
     };
 
 
-    /*
-     * When user leaves the Result field,
-     * blank value becomes "-".
-     */
     const handleBlur = () => {
         if (!editorRef.current) {
             return;
@@ -176,12 +131,13 @@ const ResultHtmlEditor = ({
 
         const visibleText =
             editorRef.current.innerText
-                .replace(
-                    /\u00A0/g,
-                    " "
-                )
+                .replace(/\u00A0/g, " ")
                 .trim();
 
+
+        /*
+         * Blank Result becomes "-"
+         */
         if (
             visibleText === "" ||
             updatedHtml.trim() === ""
@@ -192,7 +148,10 @@ const ResultHtmlEditor = ({
                 "-";
         }
 
-        onChange(updatedHtml);
+
+        onChange(
+            updatedHtml
+        );
     };
 
 
@@ -210,7 +169,7 @@ const ResultHtmlEditor = ({
 
 
 /* =========================================================
-   RESULT ENTRY PAGE
+   PAGE
 ========================================================= */
 
 const ResultEntryPage = ({
@@ -218,7 +177,7 @@ const ResultEntryPage = ({
 }: Props) => {
 
     /* =====================================================
-       READ URL PARAMETERS
+       URL VALUES
     ===================================================== */
 
     const [
@@ -227,32 +186,27 @@ const ResultEntryPage = ({
 
 
     /*
-     * Example URL:
+     * Example:
      *
-     * /result-entry
      * ?registrationNo=EFRAC%2FAYS%2F250823001
-     *
-     * React Router automatically gives:
-     *
-     * EFRAC/AYS/250823001
      */
     const registrationFromUrl =
         searchParams
             .get("registrationNo")
             ?.trim() || "";
 
+
+    /*
+     * Example:
+     *
+     * &userId=USR004
+     */
     const userIdFromUrl =
         searchParams
             .get("userId")
             ?.trim() || "";
 
-    /*
-     * Priority:
-     *
-     * 1. URL registration
-     * 2. Prop registration
-     * 3. blank/manual entry
-     */
+
     const initialRegistrationNo =
         registrationFromUrl ||
         propRegistrationNo ||
@@ -308,6 +262,35 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
+       BACK
+    ===================================================== */
+
+    const handleBack = () => {
+
+        /*
+         * This works if senior's application
+         * opened this page in a new tab/window.
+         */
+        window.close();
+
+
+        /*
+         * Some browsers do not allow JavaScript
+         * to close a tab that was opened manually.
+         *
+         * In that case go back to previous page.
+         */
+        setTimeout(() => {
+
+            if (!window.closed) {
+                window.history.back();
+            }
+
+        }, 150);
+    };
+
+
+    /* =====================================================
        LOAD REGISTRATION
     ===================================================== */
 
@@ -322,6 +305,7 @@ const ResultEntryPage = ({
 
 
         if (!regNo) {
+
             setError(
                 "Registration number is required."
             );
@@ -331,6 +315,7 @@ const ResultEntryPage = ({
 
 
         try {
+
             setLoading(true);
 
             setError("");
@@ -343,21 +328,11 @@ const ResultEntryPage = ({
                 );
 
 
-            /*
-             * Normalize database values.
-             *
-             * NULL / blank => "-"
-             *
-             * NABL:
-             * Y => Y
-             * everything else => N
-             *
-             * Result HTML stays intact.
-             */
             const normalized:
                 ResultEntry[] =
                 data.map(
                     (row) => ({
+
                         registrationNo:
                             displayValue(
                                 row.registrationNo
@@ -394,13 +369,16 @@ const ResultEntryPage = ({
                             ),
 
                         /*
-                         * DO NOT remove HTML.
+                         * Preserve Result HTML
                          */
                         result:
                             displayValue(
                                 row.result
                             ),
 
+                        /*
+                         * Anything except Y becomes N
+                         */
                         nabl:
                             normalizeNabl(
                                 row.nabl
@@ -425,9 +403,11 @@ const ResultEntryPage = ({
 
 
             /*
-             * Original values are stored
-             * so Cancel Changes can restore them
-             * and modified rows can be detected.
+             * Save original copy.
+             *
+             * Used for:
+             * - change detection
+             * - Cancel Changes
              */
             setOriginalRows(
                 JSON.parse(
@@ -443,6 +423,7 @@ const ResultEntryPage = ({
             );
         }
         catch (err: any) {
+
             console.error(
                 "Load registration error:",
                 err
@@ -461,13 +442,14 @@ const ResultEntryPage = ({
             );
         }
         finally {
+
             setLoading(false);
         }
     };
 
 
     /* =====================================================
-       AUTO LOAD REGISTRATION FROM URL / PROP
+       AUTO LOAD FROM URL
     ===================================================== */
 
     useEffect(() => {
@@ -485,20 +467,11 @@ const ResultEntryPage = ({
         }
 
 
-        /*
-         * Put incoming registration
-         * into state.
-         */
         setRegistrationNo(
             incomingRegistrationNo
         );
 
 
-        /*
-         * Automatically fetch data.
-         *
-         * User does NOT need to click Load.
-         */
         void loadRegistration(
             incomingRegistrationNo
         );
@@ -536,6 +509,7 @@ const ResultEntryPage = ({
 
                         return {
                             ...row,
+
                             [field]:
                                 value,
                         };
@@ -546,7 +520,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       RESULT HTML CHANGE
+       RESULT CHANGE
     ===================================================== */
 
     const handleResultChange = (
@@ -555,7 +529,7 @@ const ResultEntryPage = ({
     ) => {
 
         /*
-         * html contains Result HTML.
+         * HTML is intentionally preserved.
          *
          * Examples:
          *
@@ -565,8 +539,6 @@ const ResultEntryPage = ({
          *
          * <p>R1 : Absent</p>
          * <p>R2 : Present</p>
-         *
-         * We preserve it.
          */
         handleChange(
             index,
@@ -577,7 +549,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       CHECK WHETHER ROW CHANGED
+       MODIFIED CHECK
     ===================================================== */
 
     const isModified = (
@@ -595,38 +567,39 @@ const ResultEntryPage = ({
 
 
         return (
+
             row.methodCode !==
-            original.methodCode ||
+                original.methodCode ||
 
             row.method !==
-            original.method ||
+                original.method ||
 
             row.unit !==
-            original.unit ||
+                original.unit ||
 
             row.instrument !==
-            original.instrument ||
+                original.instrument ||
 
             row.loq !==
-            original.loq ||
+                original.loq ||
 
             row.result !==
-            original.result ||
+                original.result ||
 
             row.nabl !==
-            original.nabl ||
+                original.nabl ||
 
             row.spec !==
-            original.spec ||
+                original.spec ||
 
             row.refMethod !==
-            original.refMethod
+                original.refMethod
         );
     };
 
 
     /* =====================================================
-       MODIFIED ROW COUNT
+       MODIFIED COUNT
     ===================================================== */
 
     const modifiedRowsCount =
@@ -673,16 +646,13 @@ const ResultEntryPage = ({
         }
 
 
-        /*
-         * Restore original values.
-         */
         const restoredRows:
             ResultEntry[] =
-            JSON.parse(
-                JSON.stringify(
-                    originalRows
-                )
-            );
+                JSON.parse(
+                    JSON.stringify(
+                        originalRows
+                    )
+                );
 
 
         setRows(
@@ -700,14 +670,30 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       SAVE CHANGED ROWS
+       SAVE TO API
     ===================================================== */
 
     const saveChangedRows = async (
         changedRows: ResultEntry[]
     ) => {
 
+        /*
+         * User ID is required because
+         * backend stores audit information
+         * in TRN205.ADDR_REMK.
+         */
+        if (!userIdFromUrl) {
+
+            setError(
+                "User ID is missing. Unable to save changes."
+            );
+
+            return;
+        }
+
+
         try {
+
             setSaving(true);
 
             setError("");
@@ -716,10 +702,12 @@ const ResultEntryPage = ({
 
             await updateResults(
                 registrationNo,
+
                 userIdFromUrl,
 
                 changedRows.map(
                     (row) => ({
+
                         testCode:
                             row.testCode,
 
@@ -748,6 +736,9 @@ const ResultEntryPage = ({
                                 row.loq
                             ),
 
+                        /*
+                         * Keep Result HTML intact.
+                         */
                         result:
                             saveValue(
                                 row.result
@@ -773,23 +764,19 @@ const ResultEntryPage = ({
 
 
             /*
-             * Reload database values
-             * after successful update.
+             * Fetch saved values again.
              */
             await loadRegistration(
                 registrationNo
             );
 
 
-            /*
-             * loadRegistration clears message,
-             * so success message comes afterwards.
-             */
             setMessage(
                 "Changes saved successfully."
             );
         }
         catch (err: any) {
+
             console.error(
                 "Save result error:",
                 err
@@ -804,34 +791,35 @@ const ResultEntryPage = ({
             );
         }
         finally {
+
             setSaving(false);
         }
     };
 
 
     /* =====================================================
-       SAVE BUTTON
+       SAVE
     ===================================================== */
 
     const handleSave = async () => {
 
-        /*
-         * If Result contentEditable is focused,
-         * blur it first.
-         *
-         * This guarantees its latest HTML
-         * is written into React state.
-         */
         if (!userIdFromUrl) {
+
             setError(
                 "User ID is missing. Unable to save changes."
             );
 
             return;
         }
+
+
+        /*
+         * Force contentEditable Result
+         * to fire blur before save.
+         */
         if (
             document.activeElement
-            instanceof HTMLElement
+                instanceof HTMLElement
         ) {
             document
                 .activeElement
@@ -840,11 +828,11 @@ const ResultEntryPage = ({
 
 
         /*
-         * Give React one event cycle
-         * to finish state update.
+         * Wait one event loop for React state.
          */
         await new Promise<void>(
             (resolve) => {
+
                 setTimeout(
                     resolve,
                     0
@@ -853,10 +841,6 @@ const ResultEntryPage = ({
         );
 
 
-        /*
-         * Because normal inputs update state
-         * immediately, rows contains latest data.
-         */
         const changedRows =
             rows.filter(
                 (
@@ -873,6 +857,7 @@ const ResultEntryPage = ({
         if (
             changedRows.length === 0
         ) {
+
             setMessage(
                 "No changes to save."
             );
@@ -899,40 +884,31 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       SHOW MANUAL REGISTRATION LOADER?
+       MANUAL LOADER
     ===================================================== */
 
-    /*
-     * If registration comes from:
-     *
-     * URL
-     * or
-     * prop
-     *
-     * then manual Registration No field
-     * should NOT be displayed.
-     */
     const showManualRegistrationLoader =
         !registrationFromUrl &&
         !propRegistrationNo;
 
 
     /* =====================================================
-       UI
+       JSX
     ===================================================== */
 
     return (
+
         <div className="result-entry-page">
 
 
             {/* =============================================
-                EFRAC BANNER
+                HEADER
             ============================================= */}
 
             <header className="efrac-banner">
 
                 <img
-                    src="/efrac-header.png"
+                    src="/efrac-header.jpg"
                     alt="EFRAC"
                 />
 
@@ -940,12 +916,29 @@ const ResultEntryPage = ({
 
 
             {/* =============================================
-                MANUAL REGISTRATION LOADER
+                BACK BAR
+            ============================================= */}
 
-                Only visible for manual testing.
+            <div className="top-action-bar">
 
-                It automatically disappears when registration
-                is supplied through URL.
+                <button
+                    type="button"
+                    className="back-button"
+                    onClick={
+                        handleBack
+                    }
+                >
+                    Back
+                </button>
+
+            </div>
+
+
+            {/* =============================================
+                MANUAL REGISTRATION
+
+                Only for testing when registration
+                is not supplied through URL.
             ============================================= */}
 
             {showManualRegistrationLoader && (
@@ -1011,20 +1004,22 @@ const ResultEntryPage = ({
 
 
             {/* =============================================
-                LOADING MESSAGE
+                LOADING
             ============================================= */}
 
             {loading && (
-                <div className="success-message">
+
+                <div className="loading-message">
 
                     Loading registration data...
 
                 </div>
+
             )}
 
 
             {/* =============================================
-                ERROR MESSAGE
+                ERROR
             ============================================= */}
 
             {error && (
@@ -1039,23 +1034,23 @@ const ResultEntryPage = ({
 
 
             {/* =============================================
-                SUCCESS / INFORMATION MESSAGE
+                SUCCESS
             ============================================= */}
 
             {!loading &&
                 message && (
 
-                    <div className="success-message">
+                <div className="success-message">
 
-                        {message}
+                    {message}
 
-                    </div>
+                </div>
 
-                )}
+            )}
 
 
             {/* =============================================
-                RESULT TABLE
+                TABLE
             ============================================= */}
 
             {rows.length > 0 && (
@@ -1065,11 +1060,6 @@ const ResultEntryPage = ({
                     <div className="table-scroll">
 
                         <table className="result-table">
-
-
-                            {/* =================================
-                                TABLE HEADER
-                            ================================= */}
 
                             <thead>
 
@@ -1124,10 +1114,6 @@ const ResultEntryPage = ({
                             </thead>
 
 
-                            {/* =================================
-                                TABLE BODY
-                            ================================= */}
-
                             <tbody>
 
                                 {rows.map(
@@ -1158,10 +1144,7 @@ const ResultEntryPage = ({
                                             >
 
 
-                                                {/* =================
-                                                    SAMPLE ID
-                                                    READ ONLY
-                                                ================= */}
+                                                {/* SAMPLE ID */}
 
                                                 <td
                                                     className="
@@ -1169,18 +1152,13 @@ const ResultEntryPage = ({
                                                         sample-id-cell
                                                     "
                                                 >
-
                                                     {
                                                         row.registrationNo
                                                     }
-
                                                 </td>
 
 
-                                                {/* =================
-                                                    TEST CODE
-                                                    READ ONLY
-                                                ================= */}
+                                                {/* TEST CODE */}
 
                                                 <td
                                                     className="
@@ -1188,17 +1166,13 @@ const ResultEntryPage = ({
                                                         test-code-cell
                                                     "
                                                 >
-
                                                     {
                                                         row.testCode
                                                     }
-
                                                 </td>
 
 
-                                                {/* =================
-                                                    M CODE
-                                                ================= */}
+                                                {/* M CODE */}
 
                                                 <td>
 
@@ -1223,9 +1197,7 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* =================
-                                                    METHOD
-                                                ================= */}
+                                                {/* METHOD */}
 
                                                 <td>
 
@@ -1250,9 +1222,7 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* =================
-                                                    UNIT
-                                                ================= */}
+                                                {/* UNIT */}
 
                                                 <td>
 
@@ -1277,9 +1247,7 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* =================
-                                                    INSTRUMENT
-                                                ================= */}
+                                                {/* INSTRUMENT */}
 
                                                 <td>
 
@@ -1304,9 +1272,7 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* =================
-                                                    LOQ
-                                                ================= */}
+                                                {/* LOQ */}
 
                                                 <td>
 
@@ -1331,11 +1297,7 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* =================
-                                                    RESULT
-
-                                                    HTML AWARE
-                                                ================= */}
+                                                {/* RESULT */}
 
                                                 <td className="result-cell">
 
@@ -1357,13 +1319,7 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* =================
-                                                    NABL
-
-                                                    ONLY:
-                                                    N
-                                                    Y
-                                                ================= */}
+                                                {/* NABL */}
 
                                                 <td>
 
@@ -1398,9 +1354,7 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* =================
-                                                    SPEC
-                                                ================= */}
+                                                {/* SPEC */}
 
                                                 <td>
 
@@ -1425,9 +1379,7 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* =================
-                                                    REF METHOD
-                                                ================= */}
+                                                {/* REF METHOD */}
 
                                                 <td>
 
@@ -1464,14 +1416,12 @@ const ResultEntryPage = ({
                     </div>
 
 
-                    {/* =========================================
-                        ACTION AREA
-                    ========================================= */}
+                    {/* =====================================
+                        BOTTOM ACTION AREA
+                    ===================================== */}
 
                     <div className="save-area">
 
-
-                        {/* MODIFIED COUNT */}
 
                         <div className="change-info">
 
@@ -1481,8 +1431,6 @@ const ResultEntryPage = ({
 
                         </div>
 
-
-                        {/* CANCEL */}
 
                         <button
                             type="button"
@@ -1496,16 +1444,12 @@ const ResultEntryPage = ({
                             disabled={
                                 saving ||
                                 modifiedRowsCount ===
-                                0
+                                    0
                             }
                         >
-
                             Cancel Changes
-
                         </button>
 
-
-                        {/* SAVE */}
 
                         <button
                             type="button"
@@ -1519,7 +1463,7 @@ const ResultEntryPage = ({
                             disabled={
                                 saving ||
                                 modifiedRowsCount ===
-                                0
+                                    0
                             }
                         >
 

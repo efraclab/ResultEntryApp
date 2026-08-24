@@ -2,37 +2,73 @@
     box-sizing: border-box;
 }
 
+
+/* ==========================================
+   IMPORTANT:
+   Remove browser/root gaps
+========================================== */
+
 html,
 body,
 #root {
-    margin: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+
     width: 100%;
     min-height: 100%;
+
+    background: #ffffff;
 }
 
+
 body {
-    font-family: Arial, Helvetica, sans-serif;
+    margin: 0 !important;
+    padding: 0 !important;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
     background: #ffffff;
     color: #222222;
 }
 
+
 .result-entry-page {
     width: 100%;
     min-height: 100vh;
+
+    margin: 0;
+    padding: 0;
+
     background: #ffffff;
 }
 
 
-/* ================================
-   EFRAC HEADER
-================================ */
+/* ==========================================
+   EFRAC BANNER
+========================================== */
 
 .efrac-banner {
     width: 100%;
+
+    margin: 0;
+    padding: 0;
+
     background: #ffffff;
+
+    border: 0;
+    outline: 0;
+
     overflow: hidden;
-    border-bottom: 1px solid #b4b4b4;
+
+    /*
+     * Removes small inline-image baseline gap.
+     */
+    line-height: 0;
 }
+
 
 .efrac-banner img {
     display: block;
@@ -40,32 +76,101 @@ body {
     width: 100%;
     height: auto;
 
+    margin: 0;
+    padding: 0;
+
+    border: 0;
+    outline: 0;
+
     object-fit: contain;
-    object-position: left center;
+    object-position: left top;
 }
 
 
-/* ================================
+/* ==========================================
+   TOP ACTION BAR
+========================================== */
+
+.top-action-bar {
+    width: 100%;
+
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+
+    margin: 0;
+
+    padding: 5px 10px;
+
+    background: #f4f4f4;
+
+    border: 0;
+    border-bottom:
+        1px solid #c7d4e3;
+}
+
+
+/* BACK BUTTON */
+
+.back-button {
+    min-width: 75px;
+    height: 28px;
+
+    padding: 0 15px;
+
+    border:
+        1px solid #074ba6;
+
+    border-radius: 0;
+
+    background: #0b61d8;
+
+    color: #ffffff;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+
+.back-button:hover {
+    background: #094da8;
+}
+
+
+/* ==========================================
    TEMPORARY REGISTRATION LOADER
-================================ */
+========================================== */
 
 .registration-loader {
     display: flex;
     align-items: center;
+
     gap: 7px;
 
     padding: 7px 10px;
 
     background: #f4f4f4;
-    border-bottom: 1px solid #c4c4c4;
+
+    border-bottom:
+        1px solid #c4c4c4;
 
     font-size: 12px;
 }
 
+
 .registration-loader label {
-    font-weight: 700;
     min-width: 110px;
+
+    font-weight: 700;
 }
+
 
 .registration-loader input {
     width: 310px;
@@ -73,30 +178,44 @@ body {
 
     padding: 3px 6px;
 
-    border: 1px solid #9db9df;
+    border:
+        1px solid #9db9df;
+
     border-radius: 0;
 
     background: #ffffff;
+
     color: #174f91;
 
-    font-family: Arial, Helvetica, sans-serif;
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
     font-size: 12px;
 
     outline: none;
 }
 
+
 .registration-loader input:focus {
     border-color: #1767d2;
-    outline: 1px solid #1767d2;
+
+    outline:
+        1px solid #1767d2;
 }
+
 
 .registration-loader button {
     height: 27px;
 
     padding: 0 15px;
 
-    border: 1px solid #1967be;
+    border:
+        1px solid #1967be;
+
     background: #0b61d8;
+
     color: #ffffff;
 
     cursor: pointer;
@@ -105,62 +224,88 @@ body {
     font-weight: 700;
 }
 
+
 .registration-loader button:hover:not(:disabled) {
     background: #094da8;
 }
 
+
 .registration-loader button:disabled {
     opacity: 0.6;
+
     cursor: not-allowed;
 }
 
 
-/* ================================
+/* ==========================================
    MESSAGES
-================================ */
+========================================== */
 
 .error-message,
-.success-message {
+.success-message,
+.loading-message {
+    margin: 0;
+
     padding: 8px 12px;
-    margin: 5px 0;
 
     font-size: 12px;
     font-weight: 600;
 }
 
+
 .error-message {
     background: #ffecec;
-    border: 1px solid #f5b3b3;
+
+    border:
+        1px solid #f5b3b3;
+
     color: #b02020;
 }
 
+
 .success-message {
     background: #edf9ee;
-    border: 1px solid #b8dfbd;
+
+    border:
+        1px solid #b8dfbd;
+
     color: #267030;
 }
 
 
-/* ================================
+.loading-message {
+    background: #eef6ff;
+
+    border:
+        1px solid #b9d6f5;
+
+    color: #14599d;
+}
+
+
+/* ==========================================
    TABLE SCROLL
-================================ */
+========================================== */
 
 .table-scroll {
     width: 100%;
+
     overflow-x: auto;
     overflow-y: visible;
 }
 
 
-/* ================================
-   RESULT TABLE
-================================ */
+/* ==========================================
+   TABLE
+========================================== */
 
 .result-table {
     width: 100%;
+
     min-width: 1500px;
 
     border-collapse: collapse;
+
     table-layout: auto;
 
     font-size: 12px;
@@ -170,15 +315,20 @@ body {
 /* HEADER */
 
 .result-table thead th {
+    padding: 6px;
+
     background: #6098eb;
+
     color: #ffffff;
 
-    padding: 6px 6px;
+    border-right:
+        1px solid #83acf0;
 
-    border-right: 1px solid #83acf0;
-    border-bottom: 1px solid #4b85dc;
+    border-bottom:
+        1px solid #4b85dc;
 
     text-align: left;
+
     vertical-align: middle;
 
     font-size: 12px;
@@ -193,61 +343,70 @@ body {
 .result-table tbody td {
     padding: 3px 5px;
 
-    border-right: 1px solid #d2dce8;
-    border-bottom: 1px solid #d2dce8;
+    border-right:
+        1px solid #d2dce8;
+
+    border-bottom:
+        1px solid #d2dce8;
 
     vertical-align: middle;
 }
 
 
-/* Alternate rows */
+/* ALTERNATE ROWS */
 
 .result-table tbody tr:nth-child(odd) td {
     background: #ffffff;
 }
+
 
 .result-table tbody tr:nth-child(even) td {
     background: #dce9fa;
 }
 
 
-/* Hover */
+/* HOVER */
 
 .result-table tbody tr:hover td {
     background: #c9ddf9;
 }
 
 
-/* Modified row */
+/* MODIFIED */
 
 .result-table tbody tr.modified-row td {
     background: #fff5cf;
 }
 
 
-/* ================================
-   READ ONLY CELLS
-================================ */
+/* ==========================================
+   READ ONLY
+========================================== */
 
 .readonly-cell {
-    font-weight: 600;
     color: #222222;
+
+    font-weight: 600;
 }
+
 
 .sample-id-cell {
     min-width: 215px;
+
     white-space: nowrap;
 }
+
 
 .test-code-cell {
     min-width: 90px;
+
     white-space: nowrap;
 }
 
 
-/* ================================
+/* ==========================================
    EDITABLE INPUTS
-================================ */
+========================================== */
 
 .result-table input,
 .result-table select {
@@ -257,126 +416,13 @@ body {
 
     padding: 3px 5px;
 
-    border: 1px solid #9db9df;
+    border:
+        1px solid #9db9df;
+
     border-radius: 0;
 
     background: #f8fbff;
 
-    /* Editable text should not look black */
-    color: #174f91;
-
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-
-    outline: none;
-}
-
-.result-table input:hover,
-.result-table select:hover {
-    border-color: #6f9ed8;
-}
-
-.result-table input:focus,
-.result-table select:focus {
-    background: #ffffff;
-
-    border-color: #1767d2;
-    outline: 1px solid #1767d2;
-}
-
-
-/* ================================
-   NABL
-================================ */
-
-.result-table select {
-    cursor: pointer;
-
-    font-weight: 700;
-    text-align: center;
-}
-
-
-/* ================================
-   COLUMN WIDTHS
-================================ */
-
-.result-table th:nth-child(1),
-.result-table td:nth-child(1) {
-    min-width: 215px;
-}
-
-.result-table th:nth-child(2),
-.result-table td:nth-child(2) {
-    min-width: 90px;
-}
-
-.result-table th:nth-child(3),
-.result-table td:nth-child(3) {
-    min-width: 85px;
-}
-
-.result-table th:nth-child(4),
-.result-table td:nth-child(4) {
-    min-width: 180px;
-}
-
-.result-table th:nth-child(5),
-.result-table td:nth-child(5) {
-    min-width: 90px;
-}
-
-.result-table th:nth-child(6),
-.result-table td:nth-child(6) {
-    min-width: 120px;
-}
-
-.result-table th:nth-child(7),
-.result-table td:nth-child(7) {
-    min-width: 80px;
-}
-
-.result-table th:nth-child(8),
-.result-table td:nth-child(8) {
-    min-width: 220px;
-}
-
-.result-table th:nth-child(9),
-.result-table td:nth-child(9) {
-    min-width: 70px;
-}
-
-.result-table th:nth-child(10),
-.result-table td:nth-child(10) {
-    min-width: 180px;
-}
-
-.result-table th:nth-child(11),
-.result-table td:nth-child(11) {
-    min-width: 180px;
-}
-
-
-/* ================================
-   RESULT HTML EDITOR
-================================ */
-
-.result-cell {
-    min-width: 220px;
-    vertical-align: top;
-}
-
-.result-editor {
-    width: 100%;
-    min-width: 210px;
-    min-height: 28px;
-
-    padding: 4px 6px;
-
-    border: 1px solid #9db9df;
-
-    background: #f8fbff;
     color: #174f91;
 
     font-family:
@@ -386,86 +432,227 @@ body {
 
     font-size: 12px;
     font-weight: 500;
+
+    outline: none;
+}
+
+
+.result-table input:hover,
+.result-table select:hover {
+    border-color: #6f9ed8;
+}
+
+
+.result-table input:focus,
+.result-table select:focus {
+    background: #ffffff;
+
+    border-color: #1767d2;
+
+    outline:
+        1px solid #1767d2;
+}
+
+
+/* ==========================================
+   NABL
+========================================== */
+
+.result-table select {
+    cursor: pointer;
+
+    font-weight: 700;
+
+    text-align: center;
+}
+
+
+/* ==========================================
+   COLUMN WIDTHS
+========================================== */
+
+.result-table th:nth-child(1),
+.result-table td:nth-child(1) {
+    min-width: 215px;
+}
+
+
+.result-table th:nth-child(2),
+.result-table td:nth-child(2) {
+    min-width: 90px;
+}
+
+
+.result-table th:nth-child(3),
+.result-table td:nth-child(3) {
+    min-width: 85px;
+}
+
+
+.result-table th:nth-child(4),
+.result-table td:nth-child(4) {
+    min-width: 180px;
+}
+
+
+.result-table th:nth-child(5),
+.result-table td:nth-child(5) {
+    min-width: 90px;
+}
+
+
+.result-table th:nth-child(6),
+.result-table td:nth-child(6) {
+    min-width: 120px;
+}
+
+
+.result-table th:nth-child(7),
+.result-table td:nth-child(7) {
+    min-width: 80px;
+}
+
+
+.result-table th:nth-child(8),
+.result-table td:nth-child(8) {
+    min-width: 220px;
+}
+
+
+.result-table th:nth-child(9),
+.result-table td:nth-child(9) {
+    min-width: 70px;
+}
+
+
+.result-table th:nth-child(10),
+.result-table td:nth-child(10) {
+    min-width: 180px;
+}
+
+
+.result-table th:nth-child(11),
+.result-table td:nth-child(11) {
+    min-width: 180px;
+}
+
+
+/* ==========================================
+   RESULT HTML EDITOR
+========================================== */
+
+.result-cell {
+    min-width: 220px;
+
+    vertical-align: top;
+}
+
+
+.result-editor {
+    width: 100%;
+
+    min-width: 210px;
+    min-height: 28px;
+
+    padding: 4px 6px;
+
+    border:
+        1px solid #9db9df;
+
+    background: #f8fbff;
+
+    color: #174f91;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 12px;
+    font-weight: 500;
+
     line-height: 18px;
 
     outline: none;
 
     white-space: normal;
+
     overflow-wrap: break-word;
 
     cursor: text;
 }
 
+
 .result-editor:hover {
     border-color: #6f9ed8;
 }
 
-.result-editor:focus {
-    border-color: #1767d2;
-    outline: 1px solid #1767d2;
 
+.result-editor:focus {
     background: #ffffff;
+
+    border-color: #1767d2;
+
+    outline:
+        1px solid #1767d2;
 }
 
 
-/* Keep multiple <p> values compact */
+/* Existing DB <p> */
 
 .result-editor p {
     margin: 0;
+
     padding: 0;
 
     min-height: 18px;
 }
 
 
-/* Preserve things like R<sub>f</sub> */
+/* Preserve R<sub>f</sub> */
 
 .result-editor sub {
     font-size: 75%;
+
     vertical-align: sub;
 }
 
 
-/* Empty editor helper */
-
-.result-editor:empty::before {
-    content: "Enter result";
-
-    color: #8296ad;
-
-    pointer-events: none;
-}
-
-
-/* ================================
-   ACTION AREA
-================================ */
+/* ==========================================
+   BOTTOM ACTION AREA
+========================================== */
 
 .save-area {
+    width: 100%;
+
     display: flex;
     justify-content: flex-end;
     align-items: center;
+
     gap: 10px;
 
     padding: 10px;
 
-    border-top: 1px solid #c6c6c6;
-
     background: #f5f5f5;
+
+    border-top:
+        1px solid #c6c6c6;
 }
+
 
 .change-info {
     margin-right: auto;
 
+    color: #555555;
+
     font-size: 12px;
     font-weight: 600;
-    color: #555555;
 }
 
 
-/* ================================
-   CANCEL BUTTON
-================================ */
+/* ==========================================
+   CANCEL
+========================================== */
 
 .cancel-button {
     min-width: 125px;
@@ -473,31 +660,40 @@ body {
 
     padding: 0 16px;
 
-    border: 1px solid #777777;
+    border:
+        1px solid #777777;
+
     background: #ffffff;
 
     color: #333333;
 
-    font-family: Arial, Helvetica, sans-serif;
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
     font-size: 12px;
     font-weight: 700;
 
     cursor: pointer;
 }
 
+
 .cancel-button:hover:not(:disabled) {
     background: #eeeeee;
 }
 
+
 .cancel-button:disabled {
     opacity: 0.5;
+
     cursor: not-allowed;
 }
 
 
-/* ================================
-   SAVE BUTTON
-================================ */
+/* ==========================================
+   SAVE
+========================================== */
 
 .save-button {
     min-width: 125px;
@@ -505,33 +701,42 @@ body {
 
     padding: 0 16px;
 
-    border: 1px solid #074ba6;
+    border:
+        1px solid #074ba6;
+
     background: #0b61d8;
 
     color: #ffffff;
 
-    font-family: Arial, Helvetica, sans-serif;
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
     font-size: 12px;
     font-weight: 700;
 
     cursor: pointer;
 }
 
+
 .save-button:hover:not(:disabled) {
     background: #094da8;
 }
 
+
 .save-button:disabled {
     background: #a5a5a5;
+
     border-color: #999999;
 
     cursor: not-allowed;
 }
 
 
-/* ================================
+/* ==========================================
    MOBILE
-================================ */
+========================================== */
 
 @media (max-width: 900px) {
 
@@ -539,16 +744,20 @@ body {
         flex-wrap: wrap;
     }
 
+
     .registration-loader input {
         width: 250px;
     }
+
 
     .save-area {
         flex-wrap: wrap;
     }
 
+
     .change-info {
         width: 100%;
+
         margin-right: 0;
     }
 }
