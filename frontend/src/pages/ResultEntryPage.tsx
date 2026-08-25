@@ -162,6 +162,8 @@ interface MethodSearchBoxProps {
     onSelect: (
         method: MethodSuggestion
     ) => void;
+
+    onManualDash: () => void;
 }
 
 
@@ -169,6 +171,7 @@ const MethodSearchBox = ({
     value,
     disabled,
     onSelect,
+    onManualDash,
 }: MethodSearchBoxProps) => {
     const [
         text,
@@ -327,12 +330,44 @@ const MethodSearchBox = ({
                 }
 
                 onChange={(e) => {
-                    setHasUserTyped(
-                        true
-                    );
+                    const newValue =
+                        e.target.value;
 
                     setText(
-                        e.target.value
+                        newValue
+                    );
+
+
+                    /*
+                     * Special rule:
+                     *
+                     * Method = "-"
+                     * =>
+                     * M Code = "-"
+                     *
+                     * No search required.
+                     */
+                    if (
+                        newValue.trim() === "-"
+                    ) {
+                        setHasUserTyped(
+                            false
+                        );
+
+                        setSuggestions([]);
+
+                        setShowSuggestions(
+                            false
+                        );
+
+                        onManualDash();
+
+                        return;
+                    }
+
+
+                    setHasUserTyped(
+                        true
                     );
 
                     setShowSuggestions(
@@ -2141,6 +2176,23 @@ const ResultEntryPage = ({
                                                                     selected
                                                                 )
                                                             }
+
+                                                            onManualDash={() => {
+                                                                handleChange(
+                                                                    index,
+                                                                    "method",
+                                                                    "-"
+                                                                );
+
+                                                                handleChange(
+                                                                    index,
+                                                                    "methodCode",
+                                                                    "-"
+                                                                );
+
+                                                                setError("");
+                                                                setMessage("");
+                                                            }}
                                                         />
 
                                                     )}
