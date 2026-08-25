@@ -11,6 +11,7 @@ namespace ResultEntryApi.Controllers
     {
         private readonly IResultEntryService _service;
 
+
         public ResultEntryController(
             IResultEntryService service
         )
@@ -18,60 +19,102 @@ namespace ResultEntryApi.Controllers
             _service = service;
         }
 
+
+        // =====================================================
+        // GET REGISTRATION
+        // =====================================================
+
         [HttpGet]
         public async Task<IActionResult>
             GetByRegistration(
-                [FromQuery] string registrationNo
+                [FromQuery]
+                string registrationNo,
+
+                [FromQuery]
+                string labCode
             )
         {
             try
             {
-                var result =
+                var results =
                     await _service
                         .GetByRegistrationAsync(
-                            registrationNo
+                            registrationNo,
+                            labCode
                         );
 
-                if (result.Count == 0)
+
+                if (
+                    results == null ||
+                    results.Count == 0
+                )
                 {
-                    return NotFound(new
-                    {
-                        success = false,
-                        message =
-                            "No test records found for this registration number."
-                    });
+                    return NotFound(
+                        new
+                        {
+                            success = false,
+
+                            message =
+                                "No records found for this registration number and lab."
+                        }
+                    );
                 }
 
-                return Ok(new
-                {
-                    success = true,
-                    registrationNo,
-                    totalRows = result.Count,
-                    data = result
-                });
+
+                return Ok(
+                    new
+                    {
+                        success = true,
+
+                        registrationNo,
+
+                        labCode,
+
+                        totalRows =
+                            results.Count,
+
+                        data =
+                            results
+                    }
+                );
             }
-            catch (ArgumentException ex)
+            catch (
+                ArgumentException ex
+            )
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
+                return BadRequest(
+                    new
+                    {
+                        success = false,
+
+                        message =
+                            ex.Message
+                    }
+                );
             }
             catch (Exception ex)
             {
                 return StatusCode(
                     500,
+
                     new
                     {
                         success = false,
+
                         message =
-                            "An error occurred while fetching result data.",
-                        error = ex.Message
+                            "Unable to load registration.",
+
+                        error =
+                            ex.Message
                     }
                 );
             }
         }
+
+
+        // =====================================================
+        // UPDATE
+        // =====================================================
 
         [HttpPut]
         public async Task<IActionResult>
@@ -83,42 +126,65 @@ namespace ResultEntryApi.Controllers
             try
             {
                 await _service
-                    .UpdateResultsAsync(request);
+                    .UpdateResultsAsync(
+                        request
+                    );
 
-                return Ok(new
-                {
-                    success = true,
-                    message =
-                        "Results updated successfully."
-                });
+
+                return Ok(
+                    new
+                    {
+                        success = true,
+
+                        message =
+                            "Results updated successfully."
+                    }
+                );
             }
-            catch (ArgumentException ex)
+            catch (
+                ArgumentException ex
+            )
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
+                return BadRequest(
+                    new
+                    {
+                        success = false,
+
+                        message =
+                            ex.Message
+                    }
+                );
             }
             catch (Exception ex)
             {
                 return StatusCode(
                     500,
+
                     new
                     {
                         success = false,
+
                         message =
                             "An error occurred while updating result data.",
-                        error = ex.Message
+
+                        error =
+                            ex.Message
                     }
                 );
             }
         }
+
+
+        // =====================================================
+        // M CODE -> METHOD
+        // =====================================================
+
         [HttpGet("method")]
         public async Task<IActionResult>
-    GetMethodByCode(
-        [FromQuery] string methodCode
-    )
+            GetMethodByCode(
+                [FromQuery]
+                string methodCode
+            )
         {
             try
             {
@@ -128,58 +194,81 @@ namespace ResultEntryApi.Controllers
                             methodCode
                         );
 
+
                 if (
                     string.IsNullOrWhiteSpace(
                         methodName
                     )
                 )
                 {
-                    return NotFound(new
-                    {
-                        success = false,
-                        message =
-                            "No method found for this M Code."
-                    });
+                    return NotFound(
+                        new
+                        {
+                            success = false,
+
+                            message =
+                                "No method found for this M Code."
+                        }
+                    );
                 }
 
-                return Ok(new
-                {
-                    success = true,
-                    methodCode,
-                    method = methodName
-                });
+
+                return Ok(
+                    new
+                    {
+                        success = true,
+
+                        methodCode,
+
+                        method =
+                            methodName
+                    }
+                );
             }
             catch (
                 ArgumentException ex
             )
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
+                return BadRequest(
+                    new
+                    {
+                        success = false,
+
+                        message =
+                            ex.Message
+                    }
+                );
             }
             catch (Exception ex)
             {
                 return StatusCode(
                     500,
+
                     new
                     {
                         success = false,
+
                         message =
                             "Unable to fetch method.",
-                        error = ex.Message
+
+                        error =
+                            ex.Message
                     }
                 );
             }
         }
 
+
+        // =====================================================
+        // SEARCH METHODS
+        // =====================================================
+
         [HttpGet("methods/search")]
         public async Task<IActionResult>
-    SearchMethods(
-        [FromQuery]
-        string search
-    )
+            SearchMethods(
+                [FromQuery]
+                string search
+            )
         {
             try
             {
@@ -190,16 +279,21 @@ namespace ResultEntryApi.Controllers
                         );
 
 
-                return Ok(new
-                {
-                    success = true,
-                    data = methods
-                });
+                return Ok(
+                    new
+                    {
+                        success = true,
+
+                        data =
+                            methods
+                    }
+                );
             }
             catch (Exception ex)
             {
                 return StatusCode(
                     500,
+
                     new
                     {
                         success = false,
@@ -213,11 +307,20 @@ namespace ResultEntryApi.Controllers
                 );
             }
         }
-        [HttpGet("specifications/search")]
+
+
+        // =====================================================
+        // SEARCH SPECIFICATIONS
+        // =====================================================
+
+        [HttpGet(
+            "specifications/search"
+        )]
         public async Task<IActionResult>
-    SearchSpecifications(
-        [FromQuery] string search
-    )
+            SearchSpecifications(
+                [FromQuery]
+                string search
+            )
         {
             try
             {
@@ -228,16 +331,21 @@ namespace ResultEntryApi.Controllers
                         );
 
 
-                return Ok(new
-                {
-                    success = true,
-                    data = specifications
-                });
+                return Ok(
+                    new
+                    {
+                        success = true,
+
+                        data =
+                            specifications
+                    }
+                );
             }
             catch (Exception ex)
             {
                 return StatusCode(
                     500,
+
                     new
                     {
                         success = false,

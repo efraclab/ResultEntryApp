@@ -384,67 +384,67 @@ const MethodSearchBox = ({
                 showSuggestions &&
                 suggestions.length > 0 && (
 
-                <div className="method-suggestions">
+                    <div className="method-suggestions">
 
-                    {suggestions.map(
-                        (item) => (
+                        {suggestions.map(
+                            (item) => (
 
-                            <button
-                                type="button"
+                                <button
+                                    type="button"
 
-                                key={
-                                    `${item.code}-${item.method}`
-                                }
+                                    key={
+                                        `${item.code}-${item.method}`
+                                    }
 
-                                className="method-suggestion-item"
+                                    className="method-suggestion-item"
 
-                                onMouseDown={(e) => {
-                                    e.preventDefault();
-
-
-                                    setText(
-                                        item.method
-                                    );
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
 
 
-                                    setHasUserTyped(
-                                        false
-                                    );
+                                        setText(
+                                            item.method
+                                        );
 
 
-                                    setShowSuggestions(
-                                        false
-                                    );
+                                        setHasUserTyped(
+                                            false
+                                        );
 
 
-                                    setSuggestions(
-                                        []
-                                    );
+                                        setShowSuggestions(
+                                            false
+                                        );
 
 
-                                    onSelect(
-                                        item
-                                    );
-                                }}
-                            >
-
-                                <span className="suggestion-method">
-                                    {item.method}
-                                </span>
+                                        setSuggestions(
+                                            []
+                                        );
 
 
-                                <span className="suggestion-code">
-                                    {item.code}
-                                </span>
+                                        onSelect(
+                                            item
+                                        );
+                                    }}
+                                >
 
-                            </button>
+                                    <span className="suggestion-method">
+                                        {item.method}
+                                    </span>
 
-                        )
-                    )}
 
-                </div>
+                                    <span className="suggestion-code">
+                                        {item.code}
+                                    </span>
 
-            )}
+                                </button>
+
+                            )
+                        )}
+
+                    </div>
+
+                )}
 
         </div>
     );
@@ -686,63 +686,63 @@ const SpecificationSearchBox = ({
                 showSuggestions &&
                 suggestions.length > 0 && (
 
-                <div className="spec-suggestions">
+                    <div className="spec-suggestions">
 
-                    {suggestions.map(
-                        (
-                            item,
-                            index
-                        ) => (
+                        {suggestions.map(
+                            (
+                                item,
+                                index
+                            ) => (
 
-                            <button
-                                type="button"
+                                <button
+                                    type="button"
 
-                                key={
-                                    `${item.specName}-${index}`
-                                }
+                                    key={
+                                        `${item.specName}-${index}`
+                                    }
 
-                                className="spec-suggestion-item"
+                                    className="spec-suggestion-item"
 
-                                onMouseDown={(e) => {
-                                    e.preventDefault();
-
-
-                                    setText(
-                                        item.specName
-                                    );
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
 
 
-                                    setHasUserTyped(
-                                        false
-                                    );
+                                        setText(
+                                            item.specName
+                                        );
 
 
-                                    setShowSuggestions(
-                                        false
-                                    );
+                                        setHasUserTyped(
+                                            false
+                                        );
 
 
-                                    setSuggestions(
-                                        []
-                                    );
+                                        setShowSuggestions(
+                                            false
+                                        );
 
 
-                                    onSelect(
-                                        item
-                                    );
-                                }}
-                            >
+                                        setSuggestions(
+                                            []
+                                        );
 
-                                {item.specName}
 
-                            </button>
+                                        onSelect(
+                                            item
+                                        );
+                                    }}
+                                >
 
-                        )
-                    )}
+                                    {item.specName}
 
-                </div>
+                                </button>
 
-            )}
+                            )
+                        )}
+
+                    </div>
+
+                )}
 
         </div>
     );
@@ -834,6 +834,10 @@ const ResultEntryPage = ({
             .get("userId")
             ?.trim() || "";
 
+    const labCodeFromUrl =
+        searchParams
+            .get("labCode")
+            ?.trim() || "";
 
     const initialRegistrationNo =
         registrationFromUrl ||
@@ -956,10 +960,19 @@ const ResultEntryPage = ({
             setError("");
             setMessage("");
 
+            if (!labCodeFromUrl) {
+                setError(
+                    "Lab Code is missing. Unable to load registration."
+                );
+
+                return;
+            }
+
 
             const data =
                 await getResultsByRegistration(
-                    regNo
+                    regNo,
+                    labCodeFromUrl
                 );
 
 
@@ -1424,31 +1437,31 @@ const ResultEntryPage = ({
 
         return (
             row.methodCode !==
-                original.methodCode ||
+            original.methodCode ||
 
             row.method !==
-                original.method ||
+            original.method ||
 
             row.unit !==
-                original.unit ||
+            original.unit ||
 
             row.instrument !==
-                original.instrument ||
+            original.instrument ||
 
             row.loq !==
-                original.loq ||
+            original.loq ||
 
             row.result !==
-                original.result ||
+            original.result ||
 
             row.nabl !==
-                original.nabl ||
+            original.nabl ||
 
             row.spec !==
-                original.spec ||
+            original.spec ||
 
             row.refMethod !==
-                original.refMethod
+            original.refMethod
         );
     };
 
@@ -1566,8 +1579,8 @@ const ResultEntryPage = ({
 
             await updateResults(
                 registrationNo,
-
                 userIdFromUrl,
+                labCodeFromUrl,
 
                 editableRows.map(
                     (row) => ({
@@ -1660,6 +1673,13 @@ const ResultEntryPage = ({
     ===================================================== */
 
     const handleSave = async () => {
+        if (!labCodeFromUrl) {
+            setError(
+                "Lab Code is missing. Unable to save changes."
+            );
+
+            return;
+        }
         if (!userIdFromUrl) {
             setError(
                 "User ID is missing. Unable to save changes."
@@ -1682,7 +1702,7 @@ const ResultEntryPage = ({
 
         if (
             document.activeElement
-                instanceof HTMLElement
+            instanceof HTMLElement
         ) {
             document
                 .activeElement
@@ -1898,13 +1918,13 @@ const ResultEntryPage = ({
             {!loading &&
                 message && (
 
-                <div className="success-message">
+                    <div className="success-message">
 
-                    {message}
+                        {message}
 
-                </div>
+                    </div>
 
-            )}
+                )}
 
 
             {/* TABLE */}

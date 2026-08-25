@@ -4,18 +4,22 @@ using ResultEntryApi.Models;
 
 namespace ResultEntryApi.Repositories
 {
-    public class ResultEntryRepository : IResultEntryRepository
+    public class ResultEntryRepository
+        : IResultEntryRepository
     {
-        private readonly string _connectionString;
+        private readonly string
+            _connectionString;
+
 
         public ResultEntryRepository(
             IConfiguration configuration
         )
         {
             _connectionString =
-                configuration.GetConnectionString(
-                    "DefaultConnection"
-                )
+                configuration
+                    .GetConnectionString(
+                        "DefaultConnection"
+                    )
                 ?? throw new Exception(
                     "DefaultConnection connection string not found."
                 );
@@ -23,12 +27,15 @@ namespace ResultEntryApi.Repositories
 
 
         // =====================================================
-        // GET BY REGISTRATION
+        // GET BY REGISTRATION + LAB
         // =====================================================
 
-        public async Task<List<ResultEntryDto>>
+        public async Task<
+            List<ResultEntryDto>
+        >
             GetByRegistrationAsync(
-                string registrationNo
+                string registrationNo,
+                string labCode
             )
         {
             var results =
@@ -53,7 +60,12 @@ namespace ResultEntryApi.Repositories
                     TRN2DATA,
                     TRN2AnlstTestDt
                 FROM TRN205
-                WHERE TRN2REFNO = @RegistrationNo
+                WHERE TRN2REFNO =
+                    @RegistrationNo
+
+                  AND TRN2DEPARTCD =
+                    @LabCode
+
                 ORDER BY TRN2HEADER;
             ";
 
@@ -63,7 +75,9 @@ namespace ResultEntryApi.Repositories
                     _connectionString
                 );
 
-            await connection.OpenAsync();
+
+            await connection
+                .OpenAsync();
 
 
             await using var command =
@@ -76,7 +90,15 @@ namespace ResultEntryApi.Repositories
             command.Parameters.Add(
                 "@RegistrationNo",
                 SqlDbType.VarChar
-            ).Value = registrationNo;
+            ).Value =
+                registrationNo.Trim();
+
+
+            command.Parameters.Add(
+                "@LabCode",
+                SqlDbType.VarChar
+            ).Value =
+                labCode.Trim();
 
 
             await using var reader =
@@ -98,12 +120,14 @@ namespace ResultEntryApi.Repositories
                                 ]
                             ),
 
+
                         TestCode =
                             GetDisplayValue(
                                 reader[
                                     "TRN2HEADER"
                                 ]
                             ),
+
 
                         MethodCode =
                             GetDisplayValue(
@@ -112,12 +136,14 @@ namespace ResultEntryApi.Repositories
                                 ]
                             ),
 
+
                         Method =
                             GetDisplayValue(
                                 reader[
                                     "TRN2METHOD"
                                 ]
                             ),
+
 
                         Unit =
                             GetDisplayValue(
@@ -126,12 +152,14 @@ namespace ResultEntryApi.Repositories
                                 ]
                             ),
 
+
                         Instrument =
                             GetDisplayValue(
                                 reader[
                                     "TRN2INSTNO"
                                 ]
                             ),
+
 
                         LOQ =
                             GetDisplayValue(
@@ -140,12 +168,10 @@ namespace ResultEntryApi.Repositories
                                 ]
                             ),
 
+
                         /*
-                         * IMPORTANT:
-                         * Existing Result HTML is preserved.
-                         *
-                         * Example:
-                         * <p> &lt;5</p>
+                         * Result HTML is
+                         * preserved.
                          */
                         Result =
                             GetDisplayValue(
@@ -154,11 +180,11 @@ namespace ResultEntryApi.Repositories
                                 ]
                             ),
 
+
                         /*
-                         * NABL:
+                         * Only Y stays Y.
                          *
-                         * Y -> Y
-                         * everything else -> N
+                         * Everything else becomes N.
                          */
                         NABL =
                             NormalizeNabl(
@@ -167,6 +193,7 @@ namespace ResultEntryApi.Repositories
                                 ]
                             ),
 
+
                         Spec =
                             GetDisplayValue(
                                 reader[
@@ -174,23 +201,25 @@ namespace ResultEntryApi.Repositories
                                 ]
                             ),
 
+
                         RefMethod =
                             GetDisplayValue(
                                 reader[
                                     "TRN2REFMETHOD"
                                 ]
                             ),
+
+
                         HodReview =
                             GetDisplayValue(
-                                reader["TRN2HODREVIEW"]
-                                ),
+                                reader[
+                                    "TRN2HODREVIEW"
+                                ]
+                            ),
+
 
                         /*
-                         * These values can still be
-                         * returned by backend.
-                         *
-                         * They are simply not shown
-                         * on frontend.
+                         * Backend-only values.
                          */
                         Out =
                             GetDisplayValue(
@@ -199,12 +228,14 @@ namespace ResultEntryApi.Repositories
                                 ]
                             ),
 
+
                         Data =
                             GetDisplayValue(
                                 reader[
                                     "TRN2DATA"
                                 ]
                             ),
+
 
                         AnalystTestDate =
                             reader[
@@ -242,7 +273,8 @@ namespace ResultEntryApi.Repositories
                 );
 
 
-            await connection.OpenAsync();
+            await connection
+                .OpenAsync();
 
 
             await using var transaction =
@@ -254,41 +286,95 @@ namespace ResultEntryApi.Repositories
             {
                 const string sql = @"
                     UPDATE TRN205
+
                     SET
-                        TRN2LOQ = @LOQ,
-                        TRN2INSTNO = @Instrument,
-                        TRN2INPUT = @Result,
+                        TRN2LOQ =
+                            @LOQ,
 
-                        TRN2OUT = '1',
-                        TRN2DATA = 'Y',
+                        TRN2INSTNO =
+                            @Instrument,
 
-                        TRN2HEADSPEC = @Spec,
-                        TRN2REFMETHOD = @RefMethod,
+                        TRN2INPUT =
+                            @Result,
 
-                        TRN2AnlstTestDt = GETDATE(),
+                        TRN2OUT =
+                            '1',
 
+                        TRN2DATA =
+                            'Y',
+
+                        TRN2HEADSPEC =
+                            @Spec,
+
+                        TRN2REFMETHOD =
+                            @RefMethod,
+
+                        TRN2AnlstTestDt =
+                            GETDATE(),
+
+                        /*
+                         * Append audit history.
+                         *
+                         * Previous values are NOT removed.
+                         */
                         ADDR_REMK =
-    CASE
-        WHEN ADDR_REMK IS NULL
-             OR LTRIM(RTRIM(ADDR_REMK)) = ''
-        THEN
-            @UserId + ' | ' +
-            CONVERT(VARCHAR(19), GETDATE(), 120)
+                            CASE
 
-        ELSE
-            ADDR_REMK +
-            ' ; ' +
-            @UserId + ' | ' +
-            CONVERT(VARCHAR(19), GETDATE(), 120)
-    END,
-                        TRN2NABLYN = @NABL,
-                        TRN2OUTSTR = @Unit,
-                        TRN2METHOD = @Method,
-                        TRN2_METHDO_DTL = @MethodCode
+                                WHEN ADDR_REMK IS NULL
+                                     OR LTRIM(
+                                            RTRIM(
+                                                ADDR_REMK
+                                            )
+                                        ) = ''
 
-                   WHERE TRN2REFNO = @RegistrationNo
-                    AND TRN2HEADER = @TestCode
-                    AND ISNULL(TRN2HODREVIEW, 'N') <> 'Y';
+                                THEN
+                                    @UserId
+                                    + ' | '
+                                    + CONVERT(
+                                        VARCHAR(19),
+                                        GETDATE(),
+                                        120
+                                    )
+
+                                ELSE
+                                    ADDR_REMK
+                                    + ' ; '
+                                    + @UserId
+                                    + ' | '
+                                    + CONVERT(
+                                        VARCHAR(19),
+                                        GETDATE(),
+                                        120
+                                    )
+
+                            END,
+
+                        TRN2NABLYN =
+                            @NABL,
+
+                        TRN2OUTSTR =
+                            @Unit,
+
+                        TRN2METHOD =
+                            @Method,
+
+                        TRN2_METHDO_DTL =
+                            @MethodCode
+
+
+                    WHERE TRN2REFNO =
+                        @RegistrationNo
+
+                      AND TRN2HEADER =
+                        @TestCode
+
+                      AND TRN2DEPARTCD =
+                        @LabCode
+
+                      AND ISNULL(
+                            TRN2HODREVIEW,
+                            'N'
+                          ) <> 'Y';
                 ";
 
 
@@ -305,11 +391,9 @@ namespace ResultEntryApi.Repositories
                         );
 
 
-                    // =============================
-                    // Editable fields
-                    //
-                    // Blank => "-"
-                    // =============================
+                    // =========================================
+                    // VALUES
+                    // =========================================
 
                     AddStringParameter(
                         command,
@@ -330,11 +414,7 @@ namespace ResultEntryApi.Repositories
 
 
                     /*
-                     * Result HTML is NOT stripped.
-                     *
-                     * Existing HTML stays intact.
-                     *
-                     * Blank => "-"
+                     * Preserve Result HTML.
                      */
                     AddStringParameter(
                         command,
@@ -364,10 +444,6 @@ namespace ResultEntryApi.Repositories
                     );
 
 
-                    /*
-                     * NABL is guaranteed to be
-                     * either Y or N.
-                     */
                     AddStringParameter(
                         command,
                         "@NABL",
@@ -404,9 +480,9 @@ namespace ResultEntryApi.Repositories
                     );
 
 
-                    // =============================
-                    // WHERE
-                    // =============================
+                    // =========================================
+                    // WHERE / AUDIT PARAMETERS
+                    // =========================================
 
                     command.Parameters.Add(
                         "@RegistrationNo",
@@ -421,12 +497,27 @@ namespace ResultEntryApi.Repositories
                         "@TestCode",
                         SqlDbType.VarChar
                     ).Value =
-                        row.TestCode.Trim();
+                        row
+                            .TestCode
+                            .Trim();
+
 
                     command.Parameters.Add(
-                                "@UserId",
-                                SqlDbType.VarChar
-                                ).Value = request.UserId;
+                        "@LabCode",
+                        SqlDbType.VarChar
+                    ).Value =
+                        request
+                            .LabCode
+                            .Trim();
+
+
+                    command.Parameters.Add(
+                        "@UserId",
+                        SqlDbType.VarChar
+                    ).Value =
+                        request
+                            .UserId
+                            .Trim();
 
 
                     var affectedRows =
@@ -434,10 +525,13 @@ namespace ResultEntryApi.Repositories
                             .ExecuteNonQueryAsync();
 
 
-                    if (affectedRows == 0)
+                    if (
+                        affectedRows == 0
+                    )
                     {
                         throw new Exception(
-                            $"Unable to update Test Code {row.TestCode}. The row may already be HOD reviewed."
+                            $"Unable to update Test Code {row.TestCode}. " +
+                            "The row may belong to another lab or HOD review may already be completed."
                         );
                     }
                 }
@@ -454,6 +548,7 @@ namespace ResultEntryApi.Repositories
                 await transaction
                     .RollbackAsync();
 
+
                 throw;
             }
         }
@@ -463,17 +558,6 @@ namespace ResultEntryApi.Repositories
         // DISPLAY VALUE
         // =====================================================
 
-        /*
-         * Database:
-         *
-         * NULL       => "-"
-         * ""         => "-"
-         * "   "      => "-"
-         *
-         * Everything else is returned unchanged.
-         *
-         * This is especially important for Result HTML.
-         */
         private static string
             GetDisplayValue(
                 object value
@@ -509,13 +593,6 @@ namespace ResultEntryApi.Repositories
         // NORMALIZE SAVE VALUE
         // =====================================================
 
-        /*
-         * Blank values must NOT become NULL.
-         *
-         * They become:
-         *
-         * -
-         */
         private static string
             NormalizeValue(
                 string? value,
@@ -539,11 +616,8 @@ namespace ResultEntryApi.Repositories
 
 
             /*
-             * Result HTML:
-             *
-             * Don't Trim() the actual HTML.
-             * We want to preserve the existing
-             * Result formatting.
+             * Result HTML stays exactly
+             * as received.
              */
             return value;
         }
@@ -577,16 +651,6 @@ namespace ResultEntryApi.Repositories
                 string? value
             )
         {
-            /*
-             * ONLY Y is accepted as Y.
-             *
-             * N        => N
-             * NULL     => N
-             * ""       => N
-             * "-"      => N
-             * ABC      => N
-             * YES      => N
-             */
             return string.Equals(
                 value?.Trim(),
                 "Y",
@@ -599,7 +663,7 @@ namespace ResultEntryApi.Repositories
 
 
         // =====================================================
-        // SQL PARAMETER
+        // ADD SQL STRING PARAMETER
         // =====================================================
 
         private static void
@@ -616,35 +680,45 @@ namespace ResultEntryApi.Repositories
                 );
 
 
-            /*
-             * IMPORTANT:
-             *
-             * We no longer use DBNull.Value
-             * for editable fields.
-             *
-             * Blank has already been
-             * converted to "-".
-             */
             parameter.Value =
                 value;
         }
 
-        public async Task<string?> GetMethodNameByCodeAsync(
-            string methodCode
-        )
+
+        // =====================================================
+        // M CODE -> METHOD
+        // =====================================================
+
+        public async Task<string?>
+            GetMethodNameByCodeAsync(
+                string methodCode
+            )
         {
             const string sql = @"
-        SELECT TOP 1
-            CODEDESC
-        FROM OCODEMST
-        WHERE CODETYPE = 'ME'
-          AND LTRIM(RTRIM(CODECD)) = @MethodCode;
-    ";
+                SELECT TOP 1
+                    CODEDESC
+
+                FROM OCODEMST
+
+                WHERE CODETYPE = 'ME'
+
+                  AND LTRIM(
+                        RTRIM(
+                            CODECD
+                        )
+                      ) = @MethodCode;
+            ";
+
 
             await using var connection =
-                new SqlConnection(_connectionString);
+                new SqlConnection(
+                    _connectionString
+                );
 
-            await connection.OpenAsync();
+
+            await connection
+                .OpenAsync();
+
 
             await using var command =
                 new SqlCommand(
@@ -652,13 +726,18 @@ namespace ResultEntryApi.Repositories
                     connection
                 );
 
+
             command.Parameters.Add(
                 "@MethodCode",
                 SqlDbType.VarChar
-            ).Value = methodCode.Trim();
+            ).Value =
+                methodCode.Trim();
+
 
             var result =
-                await command.ExecuteScalarAsync();
+                await command
+                    .ExecuteScalarAsync();
+
 
             if (
                 result == null ||
@@ -668,43 +747,70 @@ namespace ResultEntryApi.Repositories
                 return null;
             }
 
+
             return result
                 .ToString()
                 ?.Trim();
         }
 
-        public async Task<List<MethodLookupDto>>
-    SearchMethodsAsync(
-        string searchText
-    )
+
+        // =====================================================
+        // SEARCH METHODS
+        // =====================================================
+
+        public async Task<
+            List<MethodLookupDto>
+        >
+            SearchMethodsAsync(
+                string searchText
+            )
         {
             const string sql = @"
-        SELECT TOP 5
-            CODECD,
-            CODEDESC
-        FROM OCODEMST
-        WHERE CODETYPE = 'ME'
-          AND CODEDESC IS NOT NULL
-          AND LTRIM(RTRIM(CODEDESC)) <> ''
-          AND CODEDESC LIKE @SearchText
-        ORDER BY CODEDESC;
-    ";
+                SELECT TOP 5
+                    CODECD,
+                    CODEDESC
+
+                FROM OCODEMST
+
+                WHERE CODETYPE = 'ME'
+
+                  AND CODEDESC IS NOT NULL
+
+                  AND LTRIM(
+                        RTRIM(
+                            CODEDESC
+                        )
+                      ) <> ''
+
+                  AND CODEDESC LIKE
+                        @SearchText
+
+                ORDER BY CODEDESC;
+            ";
+
 
             var results =
-                new List<MethodLookupDto>();
+                new List<
+                    MethodLookupDto
+                >();
+
 
             await using var connection =
                 new SqlConnection(
                     _connectionString
                 );
 
-            await connection.OpenAsync();
+
+            await connection
+                .OpenAsync();
+
 
             await using var command =
                 new SqlCommand(
                     sql,
                     connection
                 );
+
 
             command.Parameters.Add(
                 "@SearchText",
@@ -726,16 +832,21 @@ namespace ResultEntryApi.Repositories
                     new MethodLookupDto
                     {
                         Code =
-                            reader["CODECD"]
-                                ?.ToString()
-                                ?.Trim()
+                            reader[
+                                "CODECD"
+                            ]
+                            ?.ToString()
+                            ?.Trim()
                             ?? "",
 
+
                         Method =
-                            reader["CODEDESC"]
-                                ?.ToString()
-                                ?.Trim()
-                            ?? "",
+                            reader[
+                                "CODEDESC"
+                            ]
+                            ?.ToString()
+                            ?.Trim()
+                            ?? ""
                     }
                 );
             }
@@ -743,23 +854,44 @@ namespace ResultEntryApi.Repositories
 
             return results;
         }
-        public async Task<List<SpecificationLookupDto>>
-    SearchSpecificationsAsync(
-        string searchText
-    )
+
+
+        // =====================================================
+        // SEARCH SPECIFICATIONS
+        // =====================================================
+
+        public async Task<
+            List<SpecificationLookupDto>
+        >
+            SearchSpecificationsAsync(
+                string searchText
+            )
         {
             const string sql = @"
-        SELECT DISTINCT TOP 5
-            SpecName
-        FROM SpecificationMst
-        WHERE SpecName IS NOT NULL
-          AND LTRIM(RTRIM(SpecName)) <> ''
-          AND SpecName LIKE @SearchText
-        ORDER BY SpecName;
-    ";
+                SELECT DISTINCT TOP 5
+                    SpecName
+
+                FROM SpecificationMst
+
+                WHERE SpecName IS NOT NULL
+
+                  AND LTRIM(
+                        RTRIM(
+                            SpecName
+                        )
+                      ) <> ''
+
+                  AND SpecName LIKE
+                        @SearchText
+
+                ORDER BY SpecName;
+            ";
+
 
             var results =
-                new List<SpecificationLookupDto>();
+                new List<
+                    SpecificationLookupDto
+                >();
 
 
             await using var connection =
@@ -768,7 +900,8 @@ namespace ResultEntryApi.Repositories
                 );
 
 
-            await connection.OpenAsync();
+            await connection
+                .OpenAsync();
 
 
             await using var command =
@@ -798,9 +931,11 @@ namespace ResultEntryApi.Repositories
                     new SpecificationLookupDto
                     {
                         SpecName =
-                            reader["SpecName"]
-                                ?.ToString()
-                                ?.Trim()
+                            reader[
+                                "SpecName"
+                            ]
+                            ?.ToString()
+                            ?.Trim()
                             ?? ""
                     }
                 );

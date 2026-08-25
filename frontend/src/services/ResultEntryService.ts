@@ -164,7 +164,8 @@ interface SpecificationSearchResponse {
 ========================================================= */
 
 export const getResultsByRegistration = async (
-    registrationNo: string
+    registrationNo: string,
+    labCode: string
 ): Promise<ResultEntry[]> => {
 
     const response =
@@ -173,10 +174,10 @@ export const getResultsByRegistration = async (
             {
                 params: {
                     registrationNo,
+                    labCode,
                 },
             }
         );
-
 
     return response.data.data;
 };
@@ -189,6 +190,7 @@ export const getResultsByRegistration = async (
 export const updateResults = async (
     registrationNo: string,
     userId: string,
+    labCode: string,
     rows: UpdateResultRow[]
 ): Promise<UpdateResultsResponse> => {
 
@@ -198,10 +200,10 @@ export const updateResults = async (
             {
                 registrationNo,
                 userId,
+                labCode,
                 rows,
             }
         );
-
 
     return response.data;
 };

@@ -8,6 +8,7 @@ namespace ResultEntryApi.Services
     {
         private readonly IResultEntryRepository _repository;
 
+
         public ResultEntryService(
             IResultEntryRepository repository
         )
@@ -15,52 +16,103 @@ namespace ResultEntryApi.Services
             _repository = repository;
         }
 
+
+        // =====================================================
+        // GET REGISTRATION BY LAB
+        // =====================================================
+
         public async Task<List<ResultEntryDto>>
             GetByRegistrationAsync(
-                string registrationNo
+                string registrationNo,
+                string labCode
             )
         {
-            if (string.IsNullOrWhiteSpace(registrationNo))
+            if (
+                string.IsNullOrWhiteSpace(
+                    registrationNo
+                )
+            )
             {
                 throw new ArgumentException(
                     "Registration number is required."
                 );
             }
 
+
+            if (
+                string.IsNullOrWhiteSpace(
+                    labCode
+                )
+            )
+            {
+                throw new ArgumentException(
+                    "Lab Code is required."
+                );
+            }
+
+
             return await _repository
                 .GetByRegistrationAsync(
-                    registrationNo.Trim()
+                    registrationNo.Trim(),
+                    labCode.Trim()
                 );
         }
 
-        public async Task<bool> UpdateResultsAsync(
-            UpdateResultRequest request
-        )
+
+        // =====================================================
+        // UPDATE
+        // =====================================================
+
+        public async Task<bool>
+            UpdateResultsAsync(
+                UpdateResultRequest request
+            )
         {
-            if (request == null)
+            if (
+                request == null
+            )
             {
                 throw new ArgumentNullException(
                     nameof(request)
                 );
             }
 
-            if (string.IsNullOrWhiteSpace(
-                request.RegistrationNo
-            ))
+
+            if (
+                string.IsNullOrWhiteSpace(
+                    request.RegistrationNo
+                )
+            )
             {
                 throw new ArgumentException(
                     "Registration number is required."
                 );
             }
 
-            if (string.IsNullOrWhiteSpace(
-                request.UserId
-            ))
+
+            if (
+                string.IsNullOrWhiteSpace(
+                    request.UserId
+                )
+            )
             {
                 throw new ArgumentException(
                     "User ID is required for saving changes."
                 );
             }
+
+
+            if (
+                string.IsNullOrWhiteSpace(
+                    request.LabCode
+                )
+            )
+            {
+                throw new ArgumentException(
+                    "Lab Code is required."
+                );
+            }
+
 
             if (
                 request.Rows == null ||
@@ -72,47 +124,74 @@ namespace ResultEntryApi.Services
                 );
             }
 
+
             request.RegistrationNo =
                 request.RegistrationNo.Trim();
+
 
             request.UserId =
                 request.UserId.Trim();
 
-            foreach (var row in request.Rows)
+
+            request.LabCode =
+                request.LabCode.Trim();
+
+
+            foreach (
+                var row in request.Rows
+            )
             {
-                if (string.IsNullOrWhiteSpace(
-                    row.TestCode
-                ))
+                if (
+                    string.IsNullOrWhiteSpace(
+                        row.TestCode
+                    )
+                )
                 {
                     throw new ArgumentException(
                         "Test Code is required for every row."
                     );
                 }
 
+
                 row.TestCode =
                     row.TestCode.Trim();
 
-                // NABL:
-                // Only Y is Y.
-                // Everything else becomes N.
+
+                /*
+                 * NABL:
+                 *
+                 * Y => Y
+                 *
+                 * everything else =>
+                 * N
+                 */
                 row.NABL =
                     string.Equals(
                         row.NABL?.Trim(),
                         "Y",
-                        StringComparison.OrdinalIgnoreCase
+                        StringComparison
+                            .OrdinalIgnoreCase
                     )
                         ? "Y"
                         : "N";
             }
 
+
             return await _repository
-                .UpdateResultsAsync(request);
+                .UpdateResultsAsync(
+                    request
+                );
         }
 
+
+        // =====================================================
+        // M CODE -> METHOD
+        // =====================================================
+
         public async Task<string?>
-    GetMethodNameByCodeAsync(
-        string methodCode
-    )
+            GetMethodNameByCodeAsync(
+                string methodCode
+            )
         {
             if (
                 string.IsNullOrWhiteSpace(
@@ -125,16 +204,22 @@ namespace ResultEntryApi.Services
                 );
             }
 
+
             return await _repository
                 .GetMethodNameByCodeAsync(
                     methodCode.Trim()
                 );
         }
 
+
+        // =====================================================
+        // METHOD SEARCH
+        // =====================================================
+
         public async Task<List<MethodLookupDto>>
-    SearchMethodsAsync(
-        string searchText
-    )
+            SearchMethodsAsync(
+                string searchText
+            )
         {
             if (
                 string.IsNullOrWhiteSpace(
@@ -142,18 +227,27 @@ namespace ResultEntryApi.Services
                 )
             )
             {
-                return new List<MethodLookupDto>();
+                return new List<
+                    MethodLookupDto
+                >();
             }
+
 
             return await _repository
                 .SearchMethodsAsync(
                     searchText.Trim()
                 );
         }
+
+
+        // =====================================================
+        // SPECIFICATION SEARCH
+        // =====================================================
+
         public async Task<List<SpecificationLookupDto>>
-    SearchSpecificationsAsync(
-        string searchText
-    )
+            SearchSpecificationsAsync(
+                string searchText
+            )
         {
             if (
                 string.IsNullOrWhiteSpace(
