@@ -24,4 +24,16 @@ namespace ResultEntryApi.Models
         public string? Data { get; set; }
         public DateTime? AnalystTestDate { get; set; }
     }
+
+
+}
+
+namespace ResultEntryApi.Models
+{
+    public class MethodLookupDto
+    {
+        public string Code { get; set; } = string.Empty;
+
+        public string Method { get; set; } = string.Empty;
+    }
 }

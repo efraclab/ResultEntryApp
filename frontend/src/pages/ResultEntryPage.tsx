@@ -10,8 +10,11 @@ import {
 } from "react-router-dom";
 
 import {
+    getMethodByCode,
     getResultsByRegistration,
+    searchMethods,
     updateResults,
+    type MethodSuggestion,
     type ResultEntry,
 } from "../services/ResultEntryService";
 
@@ -28,7 +31,7 @@ interface Props {
 
 
 /* =========================================================
-   RESULT EDITOR PROPS
+   RESULT EDITOR
 ========================================================= */
 
 interface ResultEditorProps {
@@ -38,14 +41,486 @@ interface ResultEditorProps {
 }
 
 
+const ResultHtmlEditor = ({
+    html,
+    disabled = false,
+    onChange,
+}: ResultEditorProps) => {
+    const editorRef =
+        useRef<HTMLDivElement>(null);
+
+
+    useEffect(() => {
+        if (!editorRef.current) {
+            return;
+        }
+
+        const incomingHtml =
+            html || "";
+
+        if (
+            editorRef.current.innerHTML !==
+            incomingHtml
+        ) {
+            editorRef.current.innerHTML =
+                incomingHtml;
+        }
+    }, [html]);
+
+
+    const handleInput = () => {
+        if (
+            disabled ||
+            !editorRef.current
+        ) {
+            return;
+        }
+
+        onChange(
+            editorRef.current.innerHTML
+        );
+    };
+
+
+    const handleBlur = () => {
+        if (
+            disabled ||
+            !editorRef.current
+        ) {
+            return;
+        }
+
+        let updatedHtml =
+            editorRef.current.innerHTML;
+
+        const visibleText =
+            editorRef.current.innerText
+                .replace(
+                    /\u00A0/g,
+                    " "
+                )
+                .trim();
+
+        if (
+            visibleText === "" ||
+            updatedHtml.trim() === ""
+        ) {
+            updatedHtml = "-";
+
+            editorRef.current.innerHTML =
+                "-";
+        }
+
+        onChange(
+            updatedHtml
+        );
+    };
+
+
+    return (
+        <div
+            ref={editorRef}
+            className={
+                disabled
+                    ? "result-editor result-editor-disabled"
+                    : "result-editor"
+            }
+            contentEditable={
+                !disabled
+            }
+            suppressContentEditableWarning
+            onInput={
+                disabled
+                    ? undefined
+                    : handleInput
+            }
+            onBlur={
+                disabled
+                    ? undefined
+                    : handleBlur
+            }
+            title={
+                disabled
+                    ? "HOD review completed. Editing is locked."
+                    : ""
+            }
+        />
+    );
+};
+
+
 /* =========================================================
-   COMMON VALUE RULES
+   METHOD SEARCH BOX
+========================================================= */
+
+interface MethodSearchBoxProps {
+    value: string;
+    disabled: boolean;
+
+    onSelect: (
+        method: MethodSuggestion
+    ) => void;
+}
+
+
+const MethodSearchBox = ({
+    value,
+    disabled,
+    onSelect,
+}: MethodSearchBoxProps) => {
+
+    const [
+        text,
+        setText,
+    ] = useState(
+        value
+    );
+
+
+    const [
+        suggestions,
+        setSuggestions,
+    ] = useState<
+        MethodSuggestion[]
+    >([]);
+
+
+    const [
+        showSuggestions,
+        setShowSuggestions,
+    ] = useState(false);
+
+
+    const [
+        searching,
+        setSearching,
+    ] = useState(false);
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Search should NOT run when page loads
+     * and Method value comes from database.
+     *
+     * Search starts only after user types.
+     */
+    const [
+        hasUserTyped,
+        setHasUserTyped,
+    ] = useState(false);
+
+
+    /*
+     * When Method changes externally:
+     *
+     * Example:
+     * M Code 6174
+     *      ↓
+     * Method becomes ATP-CMSS
+     *
+     * Update textbox but DON'T search.
+     */
+    useEffect(() => {
+
+        setText(
+            value
+        );
+
+        setHasUserTyped(
+            false
+        );
+
+        setSuggestions([]);
+
+        setShowSuggestions(
+            false
+        );
+
+    }, [value]);
+
+
+    /*
+     * Search only after user has typed.
+     */
+    useEffect(() => {
+
+        if (
+            disabled ||
+            !hasUserTyped
+        ) {
+            return;
+        }
+
+
+        const searchText =
+            text.trim();
+
+
+        if (
+            searchText === "" ||
+            searchText === "-"
+        ) {
+            setSuggestions([]);
+
+            setShowSuggestions(
+                false
+            );
+
+            return;
+        }
+
+
+        const timer =
+            setTimeout(
+                async () => {
+
+                    try {
+
+                        setSearching(
+                            true
+                        );
+
+
+                        const results =
+                            await searchMethods(
+                                searchText
+                            );
+
+
+                        setSuggestions(
+                            results
+                        );
+
+
+                        setShowSuggestions(
+                            true
+                        );
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            "Method search failed:",
+                            error
+                        );
+
+
+                        setSuggestions([]);
+
+                        setShowSuggestions(
+                            false
+                        );
+
+                    }
+                    finally {
+
+                        setSearching(
+                            false
+                        );
+                    }
+
+                },
+                300
+            );
+
+
+        return () => {
+
+            clearTimeout(
+                timer
+            );
+
+        };
+
+    }, [
+        text,
+        disabled,
+        hasUserTyped,
+    ]);
+
+
+    return (
+
+        <div className="method-search-wrapper">
+
+            <input
+                type="text"
+
+                value={
+                    text
+                }
+
+                disabled={
+                    disabled
+                }
+
+                onChange={(e) => {
+
+                    /*
+                     * NOW we know the user
+                     * actually typed something.
+                     */
+                    setHasUserTyped(
+                        true
+                    );
+
+
+                    setText(
+                        e.target.value
+                    );
+
+
+                    setShowSuggestions(
+                        true
+                    );
+                }}
+
+                onFocus={() => {
+
+                    /*
+                     * Simply clicking/focusing
+                     * should NOT open suggestions.
+                     *
+                     * Only reopen if user has
+                     * already typed something.
+                     */
+                    if (
+                        hasUserTyped &&
+                        suggestions.length > 0
+                    ) {
+
+                        setShowSuggestions(
+                            true
+                        );
+                    }
+
+                }}
+
+                onBlur={() => {
+
+                    setTimeout(
+                        () => {
+
+                            setShowSuggestions(
+                                false
+                            );
+
+                        },
+                        150
+                    );
+
+                }}
+
+                placeholder="Search Method"
+
+                title={
+                    disabled
+                        ? "HOD review completed. Editing is locked."
+                        : "Type Method name and select from suggestions."
+                }
+            />
+
+
+            {searching && (
+
+                <div className="method-search-status">
+
+                    Searching...
+
+                </div>
+
+            )}
+
+
+            {!disabled &&
+                hasUserTyped &&
+                showSuggestions &&
+                suggestions.length > 0 && (
+
+                <div className="method-suggestions">
+
+                    {suggestions.map(
+                        (item) => (
+
+                            <button
+                                type="button"
+
+                                key={
+                                    `${item.code}-${item.method}`
+                                }
+
+                                className="method-suggestion-item"
+
+                                onMouseDown={(e) => {
+
+                                    /*
+                                     * Prevent input blur
+                                     * before click selection.
+                                     */
+                                    e.preventDefault();
+
+
+                                    setText(
+                                        item.method
+                                    );
+
+
+                                    setHasUserTyped(
+                                        false
+                                    );
+
+
+                                    setShowSuggestions(
+                                        false
+                                    );
+
+
+                                    setSuggestions(
+                                        []
+                                    );
+
+
+                                    onSelect(
+                                        item
+                                    );
+                                }}
+                            >
+
+                                <span className="suggestion-method">
+
+                                    {item.method}
+
+                                </span>
+
+
+                                <span className="suggestion-code">
+
+                                    {item.code}
+
+                                </span>
+
+                            </button>
+
+                        )
+                    )}
+
+                </div>
+
+            )}
+
+        </div>
+
+    );
+};
+
+/* =========================================================
+   COMMON HELPERS
 ========================================================= */
 
 const displayValue = (
     value: string | null | undefined
 ): string => {
-
     if (
         value === null ||
         value === undefined ||
@@ -61,7 +536,6 @@ const displayValue = (
 const saveValue = (
     value: string | null | undefined
 ): string => {
-
     if (
         value === null ||
         value === undefined ||
@@ -74,14 +548,9 @@ const saveValue = (
 };
 
 
-/*
- * Only Y remains Y.
- * Anything else becomes N.
- */
 const normalizeNabl = (
     value: string | null | undefined
 ): "Y" | "N" => {
-
     return value
         ?.trim()
         .toUpperCase() === "Y"
@@ -90,152 +559,14 @@ const normalizeNabl = (
 };
 
 
-/*
- * HOD Review:
- *
- * Y => reviewed / locked
- * anything else => not reviewed
- */
 const normalizeHodReview = (
     value: string | null | undefined
 ): "Y" | "N" => {
-
     return value
         ?.trim()
         .toUpperCase() === "Y"
         ? "Y"
         : "N";
-};
-
-
-/* =========================================================
-   RESULT HTML EDITOR
-========================================================= */
-
-const ResultHtmlEditor = ({
-    html,
-    disabled = false,
-    onChange,
-}: ResultEditorProps) => {
-
-    const editorRef =
-        useRef<HTMLDivElement>(null);
-
-
-    /*
-     * Load HTML coming from DB.
-     */
-    useEffect(() => {
-
-        if (!editorRef.current) {
-            return;
-        }
-
-        const incomingHtml =
-            html || "";
-
-        if (
-            editorRef.current.innerHTML !==
-            incomingHtml
-        ) {
-            editorRef.current.innerHTML =
-                incomingHtml;
-        }
-
-    }, [html]);
-
-
-    /*
-     * Store Result as HTML.
-     */
-    const handleInput = () => {
-
-        if (
-            disabled ||
-            !editorRef.current
-        ) {
-            return;
-        }
-
-        onChange(
-            editorRef.current.innerHTML
-        );
-    };
-
-
-    /*
-     * Blank Result becomes "-"
-     */
-    const handleBlur = () => {
-
-        if (
-            disabled ||
-            !editorRef.current
-        ) {
-            return;
-        }
-
-        let updatedHtml =
-            editorRef.current.innerHTML;
-
-        const visibleText =
-            editorRef.current.innerText
-                .replace(/\u00A0/g, " ")
-                .trim();
-
-
-        if (
-            visibleText === "" ||
-            updatedHtml.trim() === ""
-        ) {
-            updatedHtml = "-";
-
-            editorRef.current.innerHTML =
-                "-";
-        }
-
-
-        onChange(
-            updatedHtml
-        );
-    };
-
-
-    return (
-        <div
-            ref={editorRef}
-
-            className={
-                disabled
-                    ? "result-editor result-editor-disabled"
-                    : "result-editor"
-            }
-
-            contentEditable={
-                !disabled
-            }
-
-            suppressContentEditableWarning
-
-            onInput={
-                disabled
-                    ? undefined
-                    : handleInput
-            }
-
-            onBlur={
-                disabled
-                    ? undefined
-                    : handleBlur
-            }
-
-            title={
-                disabled
-                    ? "HOD review completed. Editing is locked."
-                    : ""
-            }
-        />
-    );
 };
 
 
@@ -247,7 +578,6 @@ const ResultEntryPage = ({
     registrationNo: propRegistrationNo,
 }: Props) => {
 
-
     /* =====================================================
        URL PARAMETERS
     ===================================================== */
@@ -257,22 +587,12 @@ const ResultEntryPage = ({
     ] = useSearchParams();
 
 
-    /*
-     * Example:
-     *
-     * ?registrationNo=EFRAC%2FAYS%2F250823001
-     */
     const registrationFromUrl =
         searchParams
             .get("registrationNo")
             ?.trim() || "";
 
 
-    /*
-     * Example:
-     *
-     * &userId=USR004
-     */
     const userIdFromUrl =
         searchParams
             .get("userId")
@@ -333,6 +653,14 @@ const ResultEntryPage = ({
     ] = useState("");
 
 
+    const [
+        methodLookupIndex,
+        setMethodLookupIndex,
+    ] = useState<number | null>(
+        null
+    );
+
+
     /* =====================================================
        HOD REVIEW CHECK
     ===================================================== */
@@ -340,38 +668,25 @@ const ResultEntryPage = ({
     const isReviewed = (
         row: ResultEntry
     ): boolean => {
-
-        return normalizeHodReview(
-            row.hodReview
-        ) === "Y";
+        return (
+            normalizeHodReview(
+                row.hodReview
+            ) === "Y"
+        );
     };
 
 
     /* =====================================================
-       BACK BUTTON
+       BACK
     ===================================================== */
 
     const handleBack = () => {
-
-        /*
-         * Works when senior's application
-         * opened this page using window.open().
-         */
         window.close();
 
-
-        /*
-         * Browser may block window.close()
-         * when user manually opened the page.
-         *
-         * Fallback to previous page.
-         */
         setTimeout(() => {
-
             if (!window.closed) {
                 window.history.back();
             }
-
         }, 150);
     };
 
@@ -383,7 +698,6 @@ const ResultEntryPage = ({
     const loadRegistration = async (
         regValue?: string
     ) => {
-
         const regNo = (
             regValue ||
             registrationNo
@@ -391,7 +705,6 @@ const ResultEntryPage = ({
 
 
         if (!regNo) {
-
             setError(
                 "Registration number is required."
             );
@@ -401,7 +714,6 @@ const ResultEntryPage = ({
 
 
         try {
-
             setLoading(true);
 
             setError("");
@@ -454,17 +766,11 @@ const ResultEntryPage = ({
                                 row.loq
                             ),
 
-                        /*
-                         * Result HTML is preserved.
-                         */
                         result:
                             displayValue(
                                 row.result
                             ),
 
-                        /*
-                         * NABL only Y/N
-                         */
                         nabl:
                             normalizeNabl(
                                 row.nabl
@@ -480,11 +786,6 @@ const ResultEntryPage = ({
                                 row.refMethod
                             ),
 
-                        /*
-                         * HOD REVIEW
-                         *
-                         * Y => lock row.
-                         */
                         hodReview:
                             normalizeHodReview(
                                 row.hodReview
@@ -498,13 +799,6 @@ const ResultEntryPage = ({
             );
 
 
-            /*
-             * Store original values.
-             *
-             * Used for:
-             * - modified checking
-             * - Cancel Changes
-             */
             setOriginalRows(
                 JSON.parse(
                     JSON.stringify(
@@ -517,9 +811,9 @@ const ResultEntryPage = ({
             setRegistrationNo(
                 regNo
             );
+
         }
         catch (err: any) {
-
             console.error(
                 "Load registration error:",
                 err
@@ -536,29 +830,26 @@ const ResultEntryPage = ({
                     ?.message ||
                 "Unable to load registration."
             );
+
         }
         finally {
-
             setLoading(false);
         }
     };
 
 
     /* =====================================================
-       AUTO LOAD FROM URL
+       AUTO LOAD
     ===================================================== */
 
     useEffect(() => {
-
         const incomingRegistrationNo =
             registrationFromUrl ||
             propRegistrationNo ||
             "";
 
 
-        if (
-            !incomingRegistrationNo
-        ) {
+        if (!incomingRegistrationNo) {
             return;
         }
 
@@ -579,7 +870,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       NORMAL FIELD CHANGE
+       GENERIC FIELD CHANGE
     ===================================================== */
 
     const handleChange = (
@@ -587,7 +878,6 @@ const ResultEntryPage = ({
         field: keyof ResultEntry,
         value: string
     ) => {
-
         setRows(
             (previous) =>
                 previous.map(
@@ -595,7 +885,6 @@ const ResultEntryPage = ({
                         row,
                         rowIndex
                     ) => {
-
                         if (
                             rowIndex !== index
                         ) {
@@ -603,10 +892,6 @@ const ResultEntryPage = ({
                         }
 
 
-                        /*
-                         * HOD reviewed row:
-                         * ignore any attempted modification.
-                         */
                         if (
                             isReviewed(row)
                         ) {
@@ -634,12 +919,225 @@ const ResultEntryPage = ({
         index: number,
         html: string
     ) => {
-
         handleChange(
             index,
             "result",
             html
         );
+    };
+
+
+    /* =====================================================
+       M CODE CHANGE
+    ===================================================== */
+
+    const handleMethodCodeInput = (
+        index: number,
+        value: string
+    ) => {
+        handleChange(
+            index,
+            "methodCode",
+            value
+        );
+
+
+        /*
+         * Clear previous Method
+         * until new lookup finishes.
+         */
+        handleChange(
+            index,
+            "method",
+            "-"
+        );
+
+
+        setError("");
+        setMessage("");
+    };
+
+
+    /* =====================================================
+       M CODE → METHOD LOOKUP
+    ===================================================== */
+
+    const handleMethodCodeBlur = async (
+        index: number
+    ) => {
+        const row =
+            rows[index];
+
+
+        if (!row) {
+            return;
+        }
+
+
+        if (
+            isReviewed(row)
+        ) {
+            return;
+        }
+
+
+        const methodCode =
+            row.methodCode
+                ?.trim() || "";
+
+
+        if (
+            !methodCode ||
+            methodCode === "-"
+        ) {
+            handleChange(
+                index,
+                "methodCode",
+                "-"
+            );
+
+
+            handleChange(
+                index,
+                "method",
+                "-"
+            );
+
+            return;
+        }
+
+
+        try {
+            setMethodLookupIndex(
+                index
+            );
+
+            setError("");
+
+
+            const methodName =
+                await getMethodByCode(
+                    methodCode
+                );
+
+
+            setRows(
+                (previous) =>
+                    previous.map(
+                        (
+                            currentRow,
+                            rowIndex
+                        ) => {
+
+                            if (
+                                rowIndex !== index
+                            ) {
+                                return currentRow;
+                            }
+
+
+                            if (
+                                isReviewed(
+                                    currentRow
+                                )
+                            ) {
+                                return currentRow;
+                            }
+
+
+                            if (
+                                currentRow
+                                    .methodCode
+                                    .trim() !==
+                                methodCode
+                            ) {
+                                return currentRow;
+                            }
+
+
+                            return {
+                                ...currentRow,
+
+                                method:
+                                    methodName?.trim() ||
+                                    "-",
+                            };
+                        }
+                    )
+            );
+
+        }
+        catch (err: any) {
+            console.error(
+                "Method lookup failed:",
+                err
+            );
+
+
+            setRows(
+                (previous) =>
+                    previous.map(
+                        (
+                            currentRow,
+                            rowIndex
+                        ) => {
+
+                            if (
+                                rowIndex !== index
+                            ) {
+                                return currentRow;
+                            }
+
+
+                            return {
+                                ...currentRow,
+                                method: "-",
+                            };
+                        }
+                    )
+            );
+
+
+            setError(
+                err?.response
+                    ?.data
+                    ?.message ||
+                `No Method found for M Code: ${methodCode}`
+            );
+
+        }
+        finally {
+            setMethodLookupIndex(
+                null
+            );
+        }
+    };
+
+
+    /* =====================================================
+       METHOD → M CODE
+    ===================================================== */
+
+    const handleMethodSelect = (
+        index: number,
+        selected: MethodSuggestion
+    ) => {
+        handleChange(
+            index,
+            "method",
+            selected.method
+        );
+
+
+        handleChange(
+            index,
+            "methodCode",
+            selected.code
+        );
+
+
+        setError("");
+        setMessage("");
     };
 
 
@@ -650,12 +1148,7 @@ const ResultEntryPage = ({
     const isModified = (
         row: ResultEntry,
         index: number
-    ) => {
-
-        /*
-         * Reviewed rows should never
-         * be treated as editable changes.
-         */
+    ): boolean => {
         if (
             isReviewed(row)
         ) {
@@ -673,7 +1166,6 @@ const ResultEntryPage = ({
 
 
         return (
-
             row.methodCode !==
                 original.methodCode ||
 
@@ -729,11 +1221,10 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       CANCEL CHANGES
+       CANCEL
     ===================================================== */
 
     const handleCancelChanges = () => {
-
         if (
             modifiedRowsCount === 0
         ) {
@@ -782,9 +1273,7 @@ const ResultEntryPage = ({
     const saveChangedRows = async (
         changedRows: ResultEntry[]
     ) => {
-
         if (!userIdFromUrl) {
-
             setError(
                 "User ID is missing. Unable to save changes."
             );
@@ -793,13 +1282,6 @@ const ResultEntryPage = ({
         }
 
 
-        /*
-         * Defensive filtering:
-         *
-         * Even if something unexpected happened
-         * in frontend state, never send reviewed
-         * rows to update API.
-         */
         const editableRows =
             changedRows.filter(
                 (row) =>
@@ -810,7 +1292,6 @@ const ResultEntryPage = ({
         if (
             editableRows.length === 0
         ) {
-
             setError(
                 "No editable rows are available to save."
             );
@@ -820,7 +1301,6 @@ const ResultEntryPage = ({
 
 
         try {
-
             setSaving(true);
 
             setError("");
@@ -863,9 +1343,6 @@ const ResultEntryPage = ({
                                 row.loq
                             ),
 
-                        /*
-                         * Preserve Result HTML
-                         */
                         result:
                             saveValue(
                                 row.result
@@ -890,9 +1367,6 @@ const ResultEntryPage = ({
             );
 
 
-            /*
-             * Reload database values.
-             */
             await loadRegistration(
                 registrationNo
             );
@@ -901,9 +1375,9 @@ const ResultEntryPage = ({
             setMessage(
                 "Changes saved successfully."
             );
+
         }
         catch (err: any) {
-
             console.error(
                 "Save result error:",
                 err
@@ -916,9 +1390,9 @@ const ResultEntryPage = ({
                     ?.message ||
                 "Unable to save changes. Please try again."
             );
+
         }
         finally {
-
             setSaving(false);
         }
     };
@@ -929,9 +1403,7 @@ const ResultEntryPage = ({
     ===================================================== */
 
     const handleSave = async () => {
-
         if (!userIdFromUrl) {
-
             setError(
                 "User ID is missing. Unable to save changes."
             );
@@ -940,10 +1412,17 @@ const ResultEntryPage = ({
         }
 
 
-        /*
-         * Blur Result contentEditable
-         * so its latest HTML is captured.
-         */
+        if (
+            methodLookupIndex !== null
+        ) {
+            setError(
+                "Please wait for Method lookup to complete."
+            );
+
+            return;
+        }
+
+
         if (
             document.activeElement
                 instanceof HTMLElement
@@ -956,7 +1435,6 @@ const ResultEntryPage = ({
 
         await new Promise<void>(
             (resolve) => {
-
                 setTimeout(
                     resolve,
                     0
@@ -965,11 +1443,6 @@ const ResultEntryPage = ({
         );
 
 
-        /*
-         * Reviewed rows are automatically
-         * excluded because isModified()
-         * returns false for them.
-         */
         const changedRows =
             rows.filter(
                 (
@@ -986,9 +1459,28 @@ const ResultEntryPage = ({
         if (
             changedRows.length === 0
         ) {
-
             setMessage(
                 "No changes to save."
+            );
+
+            return;
+        }
+
+
+        /*
+         * M Code exists but Method wasn't resolved.
+         */
+        const invalidMethodRow =
+            changedRows.find(
+                (row) =>
+                    row.methodCode.trim() !== "-" &&
+                    row.method.trim() === "-"
+            );
+
+
+        if (invalidMethodRow) {
+            setError(
+                `Please select or enter a valid Method for Test Code ${invalidMethodRow.testCode}.`
             );
 
             return;
@@ -1013,7 +1505,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       MANUAL REGISTRATION LOADER
+       MANUAL LOADER
     ===================================================== */
 
     const showManualRegistrationLoader =
@@ -1026,13 +1518,10 @@ const ResultEntryPage = ({
     ===================================================== */
 
     return (
-
         <div className="result-entry-page">
 
 
-            {/* =============================================
-                EFRAC HEADER
-            ============================================= */}
+            {/* HEADER */}
 
             <header className="efrac-banner">
 
@@ -1044,17 +1533,13 @@ const ResultEntryPage = ({
             </header>
 
 
-            {/* =============================================
-                BACK BAR
-            ============================================= */}
+            {/* BACK */}
 
             <div className="top-action-bar">
 
                 <button
                     type="button"
-
                     className="back-button"
-
                     onClick={
                         handleBack
                     }
@@ -1065,11 +1550,7 @@ const ResultEntryPage = ({
             </div>
 
 
-            {/* =============================================
-                MANUAL REGISTRATION
-
-                Only visible during manual testing.
-            ============================================= */}
+            {/* MANUAL REGISTRATION */}
 
             {showManualRegistrationLoader && (
 
@@ -1082,50 +1563,37 @@ const ResultEntryPage = ({
 
                     <input
                         type="text"
-
                         value={
                             registrationNo
                         }
-
-                        onChange={(
-                            e
-                        ) =>
+                        onChange={(e) =>
                             setRegistrationNo(
                                 e.target.value
                             )
                         }
-
-                        onKeyDown={(
-                            e
-                        ) => {
-
+                        onKeyDown={(e) => {
                             if (
                                 e.key ===
                                 "Enter"
                             ) {
                                 void loadRegistration();
                             }
-
                         }}
                     />
 
 
                     <button
                         type="button"
-
                         onClick={() =>
                             void loadRegistration()
                         }
-
                         disabled={
                             loading
                         }
                     >
-
                         {loading
                             ? "Loading..."
                             : "Load"}
-
                     </button>
 
                 </div>
@@ -1133,55 +1601,41 @@ const ResultEntryPage = ({
             )}
 
 
-            {/* =============================================
-                LOADING
-            ============================================= */}
+            {/* LOADING */}
 
             {loading && (
 
                 <div className="loading-message">
-
                     Loading registration data...
-
                 </div>
 
             )}
 
 
-            {/* =============================================
-                ERROR
-            ============================================= */}
+            {/* ERROR */}
 
             {error && (
 
                 <div className="error-message">
-
                     {error}
-
                 </div>
 
             )}
 
 
-            {/* =============================================
-                SUCCESS
-            ============================================= */}
+            {/* MESSAGE */}
 
             {!loading &&
                 message && (
 
                 <div className="success-message">
-
                     {message}
-
                 </div>
 
             )}
 
 
-            {/* =============================================
-                TABLE
-            ============================================= */}
+            {/* TABLE */}
 
             {rows.length > 0 && (
 
@@ -1190,9 +1644,6 @@ const ResultEntryPage = ({
                     <div className="table-scroll">
 
                         <table className="result-table">
-
-
-                            {/* TABLE HEADER */}
 
                             <thead>
 
@@ -1247,8 +1698,6 @@ const ResultEntryPage = ({
                             </thead>
 
 
-                            {/* TABLE BODY */}
-
                             <tbody>
 
                                 {rows.map(
@@ -1268,6 +1717,11 @@ const ResultEntryPage = ({
                                                 row,
                                                 index
                                             );
+
+
+                                        const lookingUpMethod =
+                                            methodLookupIndex ===
+                                            index;
 
 
                                         return (
@@ -1333,48 +1787,68 @@ const ResultEntryPage = ({
                                                         }
 
                                                         disabled={
-                                                            reviewed
+                                                            reviewed ||
+                                                            lookingUpMethod
                                                         }
 
-                                                        onChange={(
-                                                            e
-                                                        ) =>
-                                                            handleChange(
+                                                        onChange={(e) =>
+                                                            handleMethodCodeInput(
                                                                 index,
-                                                                "methodCode",
                                                                 e.target.value
                                                             )
+                                                        }
+
+                                                        onBlur={() =>
+                                                            void handleMethodCodeBlur(
+                                                                index
+                                                            )
+                                                        }
+
+                                                        title={
+                                                            reviewed
+                                                                ? "HOD review completed. Editing is locked."
+                                                                : "Enter M Code. Method will be filled automatically."
                                                         }
                                                     />
 
                                                 </td>
 
 
-                                                {/* METHOD */}
+                                                {/* METHOD SEARCH */}
 
                                                 <td>
 
-                                                    <input
-                                                        type="text"
+                                                    {lookingUpMethod ? (
 
-                                                        value={
-                                                            row.method
-                                                        }
+                                                        <input
+                                                            type="text"
+                                                            value="Loading..."
+                                                            readOnly
+                                                            className="auto-filled-input"
+                                                        />
 
-                                                        disabled={
-                                                            reviewed
-                                                        }
+                                                    ) : (
 
-                                                        onChange={(
-                                                            e
-                                                        ) =>
-                                                            handleChange(
-                                                                index,
-                                                                "method",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                    />
+                                                        <MethodSearchBox
+                                                            value={
+                                                                row.method
+                                                            }
+
+                                                            disabled={
+                                                                reviewed
+                                                            }
+
+                                                            onSelect={(
+                                                                selected
+                                                            ) =>
+                                                                handleMethodSelect(
+                                                                    index,
+                                                                    selected
+                                                                )
+                                                            }
+                                                        />
+
+                                                    )}
 
                                                 </td>
 
@@ -1385,18 +1859,13 @@ const ResultEntryPage = ({
 
                                                     <input
                                                         type="text"
-
                                                         value={
                                                             row.unit
                                                         }
-
                                                         disabled={
                                                             reviewed
                                                         }
-
-                                                        onChange={(
-                                                            e
-                                                        ) =>
+                                                        onChange={(e) =>
                                                             handleChange(
                                                                 index,
                                                                 "unit",
@@ -1414,18 +1883,13 @@ const ResultEntryPage = ({
 
                                                     <input
                                                         type="text"
-
                                                         value={
                                                             row.instrument
                                                         }
-
                                                         disabled={
                                                             reviewed
                                                         }
-
-                                                        onChange={(
-                                                            e
-                                                        ) =>
+                                                        onChange={(e) =>
                                                             handleChange(
                                                                 index,
                                                                 "instrument",
@@ -1443,18 +1907,13 @@ const ResultEntryPage = ({
 
                                                     <input
                                                         type="text"
-
                                                         value={
                                                             row.loq
                                                         }
-
                                                         disabled={
                                                             reviewed
                                                         }
-
-                                                        onChange={(
-                                                            e
-                                                        ) =>
+                                                        onChange={(e) =>
                                                             handleChange(
                                                                 index,
                                                                 "loq",
@@ -1474,14 +1933,10 @@ const ResultEntryPage = ({
                                                         html={
                                                             row.result
                                                         }
-
                                                         disabled={
                                                             reviewed
                                                         }
-
-                                                        onChange={(
-                                                            html
-                                                        ) =>
+                                                        onChange={(html) =>
                                                             handleResultChange(
                                                                 index,
                                                                 html
@@ -1502,14 +1957,10 @@ const ResultEntryPage = ({
                                                                 row.nabl
                                                             )
                                                         }
-
                                                         disabled={
                                                             reviewed
                                                         }
-
-                                                        onChange={(
-                                                            e
-                                                        ) =>
+                                                        onChange={(e) =>
                                                             handleChange(
                                                                 index,
                                                                 "nabl",
@@ -1537,18 +1988,13 @@ const ResultEntryPage = ({
 
                                                     <input
                                                         type="text"
-
                                                         value={
                                                             row.spec
                                                         }
-
                                                         disabled={
                                                             reviewed
                                                         }
-
-                                                        onChange={(
-                                                            e
-                                                        ) =>
+                                                        onChange={(e) =>
                                                             handleChange(
                                                                 index,
                                                                 "spec",
@@ -1566,18 +2012,13 @@ const ResultEntryPage = ({
 
                                                     <input
                                                         type="text"
-
                                                         value={
                                                             row.refMethod
                                                         }
-
                                                         disabled={
                                                             reviewed
                                                         }
-
-                                                        onChange={(
-                                                            e
-                                                        ) =>
+                                                        onChange={(e) =>
                                                             handleChange(
                                                                 index,
                                                                 "refMethod",
@@ -1601,12 +2042,9 @@ const ResultEntryPage = ({
                     </div>
 
 
-                    {/* =====================================
-                        BOTTOM ACTION AREA
-                    ===================================== */}
+                    {/* ACTION AREA */}
 
                     <div className="save-area">
-
 
                         <div className="change-info">
 
@@ -1619,17 +2057,14 @@ const ResultEntryPage = ({
 
                         <button
                             type="button"
-
                             className="cancel-button"
-
                             onClick={
                                 handleCancelChanges
                             }
-
                             disabled={
                                 saving ||
-                                modifiedRowsCount ===
-                                    0
+                                methodLookupIndex !== null ||
+                                modifiedRowsCount === 0
                             }
                         >
                             Cancel Changes
@@ -1638,23 +2073,22 @@ const ResultEntryPage = ({
 
                         <button
                             type="button"
-
                             className="save-button"
-
                             onClick={() =>
                                 void handleSave()
                             }
-
                             disabled={
                                 saving ||
-                                modifiedRowsCount ===
-                                    0
+                                methodLookupIndex !== null ||
+                                modifiedRowsCount === 0
                             }
                         >
 
                             {saving
                                 ? "Saving..."
-                                : "Save Changes"}
+                                : methodLookupIndex !== null
+                                    ? "Checking Method..."
+                                    : "Save Changes"}
 
                         </button>
 

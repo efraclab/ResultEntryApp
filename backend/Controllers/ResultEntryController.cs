@@ -114,5 +114,104 @@ namespace ResultEntryApi.Controllers
                 );
             }
         }
+        [HttpGet("method")]
+        public async Task<IActionResult>
+    GetMethodByCode(
+        [FromQuery] string methodCode
+    )
+        {
+            try
+            {
+                var methodName =
+                    await _service
+                        .GetMethodNameByCodeAsync(
+                            methodCode
+                        );
+
+                if (
+                    string.IsNullOrWhiteSpace(
+                        methodName
+                    )
+                )
+                {
+                    return NotFound(new
+                    {
+                        success = false,
+                        message =
+                            "No method found for this M Code."
+                    });
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    methodCode,
+                    method = methodName
+                });
+            }
+            catch (
+                ArgumentException ex
+            )
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    500,
+                    new
+                    {
+                        success = false,
+                        message =
+                            "Unable to fetch method.",
+                        error = ex.Message
+                    }
+                );
+            }
+        }
+
+        [HttpGet("methods/search")]
+        public async Task<IActionResult>
+    SearchMethods(
+        [FromQuery]
+        string search
+    )
+        {
+            try
+            {
+                var methods =
+                    await _service
+                        .SearchMethodsAsync(
+                            search
+                        );
+
+
+                return Ok(new
+                {
+                    success = true,
+                    data = methods
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    500,
+                    new
+                    {
+                        success = false,
+
+                        message =
+                            "Unable to search methods.",
+
+                        error =
+                            ex.Message
+                    }
+                );
+            }
+        }
     }
 }

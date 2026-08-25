@@ -108,5 +108,47 @@ namespace ResultEntryApi.Services
             return await _repository
                 .UpdateResultsAsync(request);
         }
+
+        public async Task<string?>
+    GetMethodNameByCodeAsync(
+        string methodCode
+    )
+        {
+            if (
+                string.IsNullOrWhiteSpace(
+                    methodCode
+                )
+            )
+            {
+                throw new ArgumentException(
+                    "Method Code is required."
+                );
+            }
+
+            return await _repository
+                .GetMethodNameByCodeAsync(
+                    methodCode.Trim()
+                );
+        }
+
+        public async Task<List<MethodLookupDto>>
+    SearchMethodsAsync(
+        string searchText
+    )
+        {
+            if (
+                string.IsNullOrWhiteSpace(
+                    searchText
+                )
+            )
+            {
+                return new List<MethodLookupDto>();
+            }
+
+            return await _repository
+                .SearchMethodsAsync(
+                    searchText.Trim()
+                );
+        }
     }
 }

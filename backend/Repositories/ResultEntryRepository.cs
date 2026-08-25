@@ -628,5 +628,120 @@ namespace ResultEntryApi.Repositories
             parameter.Value =
                 value;
         }
+
+        public async Task<string?> GetMethodNameByCodeAsync(
+            string methodCode
+        )
+        {
+            const string sql = @"
+        SELECT TOP 1
+            CODEDESC
+        FROM OCODEMST
+        WHERE CODETYPE = 'ME'
+          AND LTRIM(RTRIM(CODECD)) = @MethodCode;
+    ";
+
+            await using var connection =
+                new SqlConnection(_connectionString);
+
+            await connection.OpenAsync();
+
+            await using var command =
+                new SqlCommand(
+                    sql,
+                    connection
+                );
+
+            command.Parameters.Add(
+                "@MethodCode",
+                SqlDbType.VarChar
+            ).Value = methodCode.Trim();
+
+            var result =
+                await command.ExecuteScalarAsync();
+
+            if (
+                result == null ||
+                result == DBNull.Value
+            )
+            {
+                return null;
+            }
+
+            return result
+                .ToString()
+                ?.Trim();
+        }
+
+        public async Task<List<MethodLookupDto>>
+    SearchMethodsAsync(
+        string searchText
+    )
+        {
+            const string sql = @"
+        SELECT TOP 5
+            CODECD,
+            CODEDESC
+        FROM OCODEMST
+        WHERE CODETYPE = 'ME'
+          AND CODEDESC IS NOT NULL
+          AND LTRIM(RTRIM(CODEDESC)) <> ''
+          AND CODEDESC LIKE @SearchText
+        ORDER BY CODEDESC;
+    ";
+
+            var results =
+                new List<MethodLookupDto>();
+
+            await using var connection =
+                new SqlConnection(
+                    _connectionString
+                );
+
+            await connection.OpenAsync();
+
+            await using var command =
+                new SqlCommand(
+                    sql,
+                    connection
+                );
+
+            command.Parameters.Add(
+                "@SearchText",
+                SqlDbType.VarChar
+            ).Value =
+                $"%{searchText.Trim()}%";
+
+
+            await using var reader =
+                await command
+                    .ExecuteReaderAsync();
+
+
+            while (
+                await reader.ReadAsync()
+            )
+            {
+                results.Add(
+                    new MethodLookupDto
+                    {
+                        Code =
+                            reader["CODECD"]
+                                ?.ToString()
+                                ?.Trim()
+                            ?? "",
+
+                        Method =
+                            reader["CODEDESC"]
+                                ?.ToString()
+                                ?.Trim()
+                            ?? "",
+                    }
+                );
+            }
+
+
+            return results;
+        }
     }
 }

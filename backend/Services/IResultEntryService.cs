@@ -11,5 +11,13 @@ namespace ResultEntryApi.Services
         Task<bool> UpdateResultsAsync(
             UpdateResultRequest request
         );
+
+        Task<string?> GetMethodNameByCodeAsync(
+            string methodCode
+        );
+        Task<List<MethodLookupDto>>
+        SearchMethodsAsync(
+        string searchText
+    );
     }
 }

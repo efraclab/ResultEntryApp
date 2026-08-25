@@ -44,6 +44,23 @@ interface UpdateResultsResponse {
     message: string;
 }
 
+interface MethodLookupResponse {
+    success: boolean;
+    methodCode: string;
+    method: string;
+}
+
+export interface MethodSuggestion {
+    code: string;
+    method: string;
+}
+
+interface MethodSearchResponse {
+    success: boolean;
+    data: MethodSuggestion[];
+}
+
+
 export const getResultsByRegistration = async (
     registrationNo: string
 ): Promise<ResultEntry[]> => {
@@ -76,4 +93,37 @@ export const updateResults = async (
         );
 
     return response.data;
+};
+
+export const getMethodByCode = async (
+    methodCode: string
+): Promise<string> => {
+    const response =
+        await axios.get<MethodLookupResponse>(
+            `${API_BASE_URL}/result-entry/method`,
+            {
+                params: {
+                    methodCode,
+                },
+            }
+        );
+
+    return response.data.method;
+};
+
+export const searchMethods = async (
+    search: string
+): Promise<MethodSuggestion[]> => {
+
+    const response =
+        await axios.get<MethodSearchResponse>(
+            `${API_BASE_URL}/result-entry/methods/search`,
+            {
+                params: {
+                    search,
+                },
+            }
+        );
+
+    return response.data.data;
 };
