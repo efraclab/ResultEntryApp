@@ -1,28 +1,20 @@
+/* =========================================================
+   GLOBAL / PAGE
+========================================================= */
+
 * {
     box-sizing: border-box;
 }
 
-
-/* ==========================================
-   PAGE / ROOT
-========================================== */
-
 html,
 body,
 #root {
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0;
+    padding: 0;
 
     width: 100%;
+    min-width: 100%;
     min-height: 100%;
-
-    background: #ffffff;
-}
-
-
-body {
-    margin: 0 !important;
-    padding: 0 !important;
 
     font-family:
         Arial,
@@ -30,10 +22,11 @@ body {
         sans-serif;
 
     background: #ffffff;
-
-    color: #222222;
 }
 
+body {
+    overflow-x: auto;
+}
 
 .result-entry-page {
     width: 100%;
@@ -43,12 +36,19 @@ body {
     padding: 0;
 
     background: #ffffff;
+
+    color: #111111;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
 }
 
 
-/* ==========================================
-   EFRAC BANNER
-========================================== */
+/* =========================================================
+   EFRAC HEADER / BANNER
+========================================================= */
 
 .efrac-banner {
     width: 100%;
@@ -56,16 +56,15 @@ body {
     margin: 0;
     padding: 0;
 
-    background: #ffffff;
-
     border: none;
     outline: none;
+
+    background: #ffffff;
 
     overflow: hidden;
 
     line-height: 0;
 }
-
 
 .efrac-banner img {
     display: block;
@@ -79,111 +78,110 @@ body {
     border: none;
     outline: none;
 
-    object-fit: contain;
-    object-position: left top;
+    object-fit: cover;
+    object-position: center;
 }
 
 
-/* ==========================================
+/* =========================================================
    TOP ACTION BAR
-========================================== */
+========================================================= */
 
 .top-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
     width: 100%;
 
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-
-    margin: 0;
+    min-height: 38px;
 
     padding: 5px 10px;
 
-    background: #f4f4f4;
+    margin: 0;
+
+    background: #f3f3f3;
 
     border: none;
-
-    border-bottom:
-        1px solid #c7d4e3;
+    border-bottom: 1px solid #d3d3d3;
 }
 
 
-/* BACK */
+/* =========================================================
+   BACK BUTTON
+========================================================= */
 
 .back-button {
-    min-width: 75px;
-    height: 28px;
+    min-width: 70px;
 
-    padding: 0 15px;
+    padding: 6px 16px;
 
-    border:
-        1px solid #074ba6;
+    border: 1px solid #1458aa;
+    border-radius: 2px;
 
-    border-radius: 0;
-
-    background: #0b61d8;
+    background: #1767d2;
 
     color: #ffffff;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
 
     font-size: 12px;
     font-weight: 700;
 
     cursor: pointer;
-}
 
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
 
 .back-button:hover {
-    background: #094da8;
+    background: #1059bd;
+    border-color: #0d4d9f;
+}
+
+.back-button:active {
+    background: #0b4caa;
 }
 
 
-/* ==========================================
-   MANUAL REGISTRATION
-========================================== */
+/* =========================================================
+   REGISTRATION LOADER
+========================================================= */
 
 .registration-loader {
     display: flex;
     align-items: center;
 
-    gap: 7px;
+    gap: 10px;
 
-    padding: 7px 10px;
+    width: 100%;
+
+    padding: 8px 20px;
 
     background: #f4f4f4;
 
-    border-bottom:
-        1px solid #c4c4c4;
-
-    font-size: 12px;
+    border-bottom: 1px solid #c9c9c9;
 }
 
-
 .registration-loader label {
-    min-width: 110px;
+    flex-shrink: 0;
 
+    color: #111111;
+
+    font-size: 12px;
     font-weight: 700;
 }
 
-
 .registration-loader input {
-    width: 310px;
-    height: 27px;
+    width: 360px;
+    height: 31px;
 
-    padding: 3px 6px;
+    padding: 4px 8px;
 
-    border:
-        1px solid #9db9df;
-
-    border-radius: 0;
+    border: 1px solid #777777;
 
     background: #ffffff;
 
-    color: #174f91;
+    color: #111111;
 
     font-family:
         Arial,
@@ -195,38 +193,31 @@ body {
     outline: none;
 }
 
-
 .registration-loader input:focus {
     border-color: #1767d2;
-
-    outline:
-        1px solid #1767d2;
 }
 
-
 .registration-loader button {
-    height: 27px;
+    min-width: 72px;
+    height: 31px;
 
-    padding: 0 15px;
+    padding: 4px 14px;
 
-    border:
-        1px solid #1967be;
+    border: 1px solid #1458aa;
 
-    background: #0b61d8;
+    background: #1767d2;
 
     color: #ffffff;
 
-    cursor: pointer;
-
     font-size: 12px;
     font-weight: 700;
-}
 
+    cursor: pointer;
+}
 
 .registration-loader button:hover:not(:disabled) {
-    background: #094da8;
+    background: #1059bd;
 }
-
 
 .registration-loader button:disabled {
     opacity: 0.6;
@@ -235,161 +226,825 @@ body {
 }
 
 
-/* ==========================================
+/* =========================================================
    MESSAGES
-========================================== */
+========================================================= */
 
+.loading-message,
 .error-message,
-.success-message,
-.loading-message {
-    margin: 0;
+.success-message {
+    width: calc(100% - 20px);
+
+    margin: 8px 10px;
 
     padding: 8px 12px;
+
+    border-radius: 2px;
 
     font-size: 12px;
     font-weight: 600;
 }
 
+.loading-message {
+    border: 1px solid #b7d0ee;
+
+    background: #edf5ff;
+
+    color: #245d9c;
+}
 
 .error-message {
-    background: #ffecec;
+    border: 1px solid #e2a2a2;
 
-    border:
-        1px solid #f5b3b3;
+    background: #fff1f1;
 
-    color: #b02020;
+    color: #b42318;
 }
-
 
 .success-message {
-    background: #edf9ee;
+    border: 1px solid #9dcfa8;
 
-    border:
-        1px solid #b8dfbd;
+    background: #effaf1;
 
-    color: #267030;
+    color: #25733b;
 }
 
 
-.loading-message {
-    background: #eef6ff;
-
-    border:
-        1px solid #b9d6f5;
-
-    color: #14599d;
-}
-
-
-/* ==========================================
-   TABLE SCROLL
-========================================== */
+/* =========================================================
+   TABLE SCROLL CONTAINER
+========================================================= */
 
 .table-scroll {
+    position: relative;
+
     width: 100%;
 
     overflow-x: auto;
     overflow-y: visible;
+
+    background: #ffffff;
 }
 
 
-/* ==========================================
-   TABLE
-========================================== */
+/* =========================================================
+   RESULT TABLE
+========================================================= */
 
 .result-table {
     width: 100%;
 
-    min-width: 1500px;
+    min-width: 1850px;
 
     border-collapse: collapse;
+    border-spacing: 0;
 
-    table-layout: auto;
+    table-layout: fixed;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
 
     font-size: 12px;
+
+    background: #ffffff;
 }
 
 
-/* TABLE HEADER */
+/* =========================================================
+   TABLE HEADER
+========================================================= */
 
 .result-table thead th {
-    padding: 6px;
+    height: 48px;
 
-    background: #6098eb;
+    padding: 8px;
+
+    border-right: 1px solid #7eabe1;
+    border-bottom: 1px solid #4e8edc;
+
+    background: #5d98e5;
 
     color: #ffffff;
 
-    border-right:
-        1px solid #83acf0;
-
-    border-bottom:
-        1px solid #4b85dc;
+    font-size: 12px;
+    font-weight: 700;
 
     text-align: left;
+    vertical-align: middle;
+
+    white-space: nowrap;
+}
+
+.result-table thead th:last-child {
+    border-right: none;
+}
+
+
+/* =========================================================
+   TABLE BODY
+========================================================= */
+
+.result-table tbody td {
+    position: relative;
+
+    padding: 5px 6px;
+
+    border-right: 1px solid #c4d3e5;
+    border-bottom: 1px solid #c4d3e5;
 
     vertical-align: middle;
 
+    background: #ffffff;
+}
+
+
+/* Alternating blue rows */
+
+.result-table tbody tr:nth-child(odd) td {
+    background: #c7dcf6;
+}
+
+.result-table tbody tr:nth-child(even) td {
+    background: #ffffff;
+}
+
+
+/* =========================================================
+   COLUMN WIDTHS
+========================================================= */
+
+/* Sample ID */
+
+.result-table th:nth-child(1),
+.result-table td:nth-child(1) {
+    width: 265px;
+}
+
+
+/* Test Code */
+
+.result-table th:nth-child(2),
+.result-table td:nth-child(2) {
+    width: 110px;
+}
+
+
+/* M Code */
+
+.result-table th:nth-child(3),
+.result-table td:nth-child(3) {
+    width: 105px;
+}
+
+
+/* Method */
+
+.result-table th:nth-child(4),
+.result-table td:nth-child(4) {
+    width: 225px;
+}
+
+
+/* Unit */
+
+.result-table th:nth-child(5),
+.result-table td:nth-child(5) {
+    width: 110px;
+}
+
+
+/* Instrument */
+
+.result-table th:nth-child(6),
+.result-table td:nth-child(6) {
+    width: 150px;
+}
+
+
+/* LOQ */
+
+.result-table th:nth-child(7),
+.result-table td:nth-child(7) {
+    width: 100px;
+}
+
+
+/* Result */
+
+.result-table th:nth-child(8),
+.result-table td:nth-child(8) {
+    width: 280px;
+}
+
+
+/* NABL */
+
+.result-table th:nth-child(9),
+.result-table td:nth-child(9) {
+    width: 90px;
+}
+
+
+/* Spec */
+
+.result-table th:nth-child(10),
+.result-table td:nth-child(10) {
+    width: 225px;
+}
+
+
+/* Ref Method */
+
+.result-table th:nth-child(11),
+.result-table td:nth-child(11) {
+    width: 225px;
+}
+
+
+/* =========================================================
+   NORMAL INPUTS
+========================================================= */
+
+.result-table input,
+.result-table select {
+    width: 100%;
+
+    min-height: 32px;
+
+    margin: 0;
+
+    padding: 5px 7px;
+
+    border: 1px solid #8fb2df;
+
+    border-radius: 0;
+
+    background: #ffffff;
+
+    color: #064b9b;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
     font-size: 12px;
+
+    outline: none;
+}
+
+.result-table input:focus,
+.result-table select:focus {
+    border-color: #1767d2;
+
+    box-shadow:
+        inset 0 0 0 1px
+        #1767d2;
+}
+
+
+/* =========================================================
+   SELECT / NABL
+========================================================= */
+
+.result-table select {
+    cursor: pointer;
+
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   READ ONLY CELLS
+========================================================= */
+
+.readonly-cell {
+    color: #111111;
+
+    font-weight: 600;
+
+    text-align: center;
+}
+
+.sample-id-cell {
+    white-space: nowrap;
+}
+
+.test-code-cell {
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   RESULT HTML EDITOR
+========================================================= */
+
+.result-cell {
+    padding: 5px !important;
+}
+
+.result-editor {
+    width: 100%;
+
+    min-height: 32px;
+    max-height: 140px;
+
+    padding: 6px 8px;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    border: 1px solid #8fb2df;
+
+    background: #ffffff;
+
+    color: #064b9b;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 12px;
+
+    line-height: 18px;
+
+    text-align: center;
+
+    outline: none;
+
+    cursor: text;
+
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.result-editor:focus {
+    border-color: #1767d2;
+
+    box-shadow:
+        inset 0 0 0 1px
+        #1767d2;
+}
+
+
+/*
+   Remove browser's default paragraph margins.
+
+   IMPORTANT:
+   This only changes how the HTML is displayed.
+   It does NOT remove <p> tags from the stored HTML.
+*/
+
+.result-editor p {
+    margin: 0;
+    padding: 0;
+}
+
+
+/* =========================================================
+   METHOD SEARCH WRAPPER
+========================================================= */
+
+.method-search-wrapper {
+    position: relative;
+
+    width: 100%;
+}
+
+
+/* Method input */
+
+.method-search-wrapper > input {
+    width: 100%;
+
+    min-height: 32px;
+
+    padding: 5px 8px;
+
+    border: 1px solid #8fb2df;
+
+    background: #ffffff;
+
+    color: #064b9b;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 12px;
+
+    text-align: left;
+
+    outline: none;
+}
+
+.method-search-wrapper > input:focus {
+    border-color: #1767d2;
+
+    box-shadow:
+        inset 0 0 0 1px
+        #1767d2;
+}
+
+
+/* =========================================================
+   METHOD DROPDOWN
+========================================================= */
+
+.method-suggestions {
+    position: absolute;
+
+    top: calc(100% + 3px);
+    left: 0;
+
+    z-index: 5000;
+
+    width: 390px;
+    min-width: 100%;
+
+    max-height: 260px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    border: 1px solid #7fa9dc;
+
+    border-radius: 4px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 5px 15px
+        rgba(0, 0, 0, 0.22);
+}
+
+
+/* Individual Method */
+
+.method-suggestion-item {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 12px;
+
+    width: 100%;
+
+    min-height: 38px;
+
+    margin: 0;
+
+    padding: 7px 9px;
+
+    border: none;
+    border-bottom: 1px solid #dbe6f3;
+
+    border-radius: 0;
+
+    background: #ffffff;
+
+    color: #174f91;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 12px;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    transition:
+        background 0.12s ease,
+        color 0.12s ease;
+}
+
+.method-suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.method-suggestion-item:hover {
+    background: #e5f0ff;
+}
+
+
+/* Method Name */
+
+.suggestion-method {
+    display: block;
+
+    flex: 1;
+
+    min-width: 0;
+
+    color: #174f91;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    line-height: 16px;
+
+    text-align: left;
+
+    white-space: normal;
+
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+
+/* M Code badge */
+
+.suggestion-code {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    min-width: 55px;
+
+    padding: 4px 7px;
+
+    border: 1px solid #b8cee9;
+
+    border-radius: 3px;
+
+    background: #e2edfb;
+
+    color: #15599f;
+
+    font-size: 11px;
     font-weight: 700;
+
+    text-align: center;
 
     white-space: nowrap;
 }
 
 
-/* TABLE BODY */
+/* Method searching */
 
-.result-table tbody td {
-    padding: 3px 5px;
+.method-search-status {
+    position: absolute;
 
-    border-right:
-        1px solid #d2dce8;
+    top: 9px;
+    right: 8px;
 
-    border-bottom:
-        1px solid #d2dce8;
+    z-index: 10;
 
-    vertical-align: middle;
-}
+    padding-left: 5px;
 
-
-/* ==========================================
-   NORMAL ALTERNATE ROWS
-========================================== */
-
-.result-table tbody tr:nth-child(odd) td {
     background: #ffffff;
+
+    color: #6d7f93;
+
+    font-size: 10px;
+
+    pointer-events: none;
 }
 
 
-.result-table tbody tr:nth-child(even) td {
-    background: #dce9fa;
+/* Method scrollbar */
+
+.method-suggestions::-webkit-scrollbar {
+    width: 7px;
+}
+
+.method-suggestions::-webkit-scrollbar-track {
+    background: #f1f5fa;
+}
+
+.method-suggestions::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+
+    background: #aec6e2;
+}
+
+.method-suggestions::-webkit-scrollbar-thumb:hover {
+    background: #8caed4;
 }
 
 
-/* HOVER NORMAL ROW */
+/* =========================================================
+   SPECIFICATION SEARCH WRAPPER
+========================================================= */
 
-.result-table tbody tr:not(.reviewed-row):hover td {
-    background: #c9ddf9;
+.spec-search-wrapper {
+    position: relative;
+
+    width: 100%;
 }
 
 
-/* ==========================================
+/* Spec input */
+
+.spec-search-wrapper > input {
+    width: 100%;
+
+    min-height: 32px;
+
+    padding: 5px 8px;
+
+    border: 1px solid #8fb2df;
+
+    background: #ffffff;
+
+    color: #064b9b;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 12px;
+
+    text-align: left;
+
+    outline: none;
+}
+
+.spec-search-wrapper > input:focus {
+    border-color: #1767d2;
+
+    box-shadow:
+        inset 0 0 0 1px
+        #1767d2;
+}
+
+
+/* =========================================================
+   SPECIFICATION DROPDOWN
+========================================================= */
+
+.spec-suggestions {
+    position: absolute;
+
+    /*
+       Spec is close to the right side of table,
+       so open dropdown toward LEFT.
+    */
+
+    top: calc(100% + 3px);
+    right: 0;
+
+    z-index: 5000;
+
+    width: 430px;
+    min-width: 100%;
+
+    max-height: 280px;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    border: 1px solid #7fa9dc;
+
+    border-radius: 4px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 5px 15px
+        rgba(0, 0, 0, 0.22);
+}
+
+
+/* Individual Specification */
+
+.spec-suggestion-item {
+    display: block;
+
+    width: 100%;
+
+    min-height: 38px;
+
+    margin: 0;
+
+    padding: 8px 10px;
+
+    border: none;
+    border-bottom: 1px solid #dbe6f3;
+
+    border-radius: 0;
+
+    background: #ffffff;
+
+    color: #174f91;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 12px;
+    font-weight: 500;
+
+    line-height: 17px;
+
+    text-align: left;
+
+    white-space: normal;
+
+    word-break: break-word;
+    overflow-wrap: anywhere;
+
+    cursor: pointer;
+
+    transition:
+        background 0.12s ease,
+        color 0.12s ease;
+}
+
+.spec-suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.spec-suggestion-item:hover {
+    background: #e5f0ff;
+
+    color: #0c4e99;
+}
+
+
+/* Searching */
+
+.spec-search-status {
+    position: absolute;
+
+    top: 9px;
+    right: 8px;
+
+    z-index: 10;
+
+    padding-left: 5px;
+
+    background: #ffffff;
+
+    color: #6d7f93;
+
+    font-size: 10px;
+
+    pointer-events: none;
+}
+
+
+/* Spec scrollbar */
+
+.spec-suggestions::-webkit-scrollbar {
+    width: 7px;
+}
+
+.spec-suggestions::-webkit-scrollbar-track {
+    background: #f1f5fa;
+}
+
+.spec-suggestions::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+
+    background: #aec6e2;
+}
+
+.spec-suggestions::-webkit-scrollbar-thumb:hover {
+    background: #8caed4;
+}
+
+
+/* =========================================================
+   AUTO FILLED INPUT
+========================================================= */
+
+.auto-filled-input {
+    background: #edf5ff !important;
+
+    color: #15599f !important;
+
+    font-style: italic;
+}
+
+
+/* =========================================================
    MODIFIED ROW
-========================================== */
+========================================================= */
 
 .result-table tbody tr.modified-row td {
-    background: #fff5cf;
+    box-shadow:
+        inset 3px 0 0
+        rgba(23, 103, 210, 0.28);
 }
 
 
-/* ==========================================
-   HOD REVIEWED ROW
-========================================== */
+/* =========================================================
+   HOD REVIEWED / LOCKED ROW
+========================================================= */
 
-/*
- * TRN2HODREVIEW = Y
- *
- * Entire row becomes visually locked.
- */
 .result-table tbody tr.reviewed-row td {
     background: #eeeeee !important;
 
@@ -397,268 +1052,30 @@ body {
 }
 
 
-/*
- * Small left indicator makes reviewed
- * rows easier to identify.
- */
-.result-table tbody tr.reviewed-row td:first-child {
-    border-left:
-        4px solid #8c8c8c;
-}
+/* Disabled normal controls */
 
+.result-table tbody tr.reviewed-row input:disabled,
+.result-table tbody tr.reviewed-row select:disabled {
+    border-color: #c5c5c5;
 
-/* ==========================================
-   READ ONLY CELLS
-========================================== */
+    background: #e8e8e8;
 
-.readonly-cell {
-    color: #222222;
-
-    font-weight: 600;
-}
-
-
-.reviewed-row .readonly-cell {
     color: #666666;
-}
-
-
-.sample-id-cell {
-    min-width: 215px;
-
-    white-space: nowrap;
-}
-
-
-.test-code-cell {
-    min-width: 90px;
-
-    white-space: nowrap;
-}
-
-
-/* ==========================================
-   EDITABLE INPUTS
-========================================== */
-
-.result-table input,
-.result-table select {
-    width: 100%;
-
-    min-height: 26px;
-
-    padding: 3px 5px;
-
-    border:
-        1px solid #9db9df;
-
-    border-radius: 0;
-
-    background: #f8fbff;
-
-    color: #174f91;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-
-    font-size: 12px;
-    font-weight: 500;
-
-    outline: none;
-}
-
-
-.result-table input:hover:not(:disabled),
-.result-table select:hover:not(:disabled) {
-    border-color: #6f9ed8;
-}
-
-
-.result-table input:focus,
-.result-table select:focus {
-    background: #ffffff;
-
-    border-color: #1767d2;
-
-    outline:
-        1px solid #1767d2;
-}
-
-
-/* ==========================================
-   DISABLED / REVIEWED INPUTS
-========================================== */
-
-.result-table input:disabled,
-.result-table select:disabled {
-    background: #e7e7e7;
-
-    border-color: #c4c4c4;
-
-    color: #686868;
-
-    cursor: not-allowed;
 
     opacity: 1;
+
+    cursor: not-allowed;
 }
 
 
-/* ==========================================
-   NABL
-========================================== */
-
-.result-table select {
-    cursor: pointer;
-
-    font-weight: 700;
-
-    text-align: center;
-}
-
-
-/* ==========================================
-   COLUMN WIDTHS
-========================================== */
-
-.result-table th:nth-child(1),
-.result-table td:nth-child(1) {
-    min-width: 215px;
-}
-
-
-.result-table th:nth-child(2),
-.result-table td:nth-child(2) {
-    min-width: 90px;
-}
-
-
-.result-table th:nth-child(3),
-.result-table td:nth-child(3) {
-    min-width: 85px;
-}
-
-
-.result-table th:nth-child(4),
-.result-table td:nth-child(4) {
-    min-width: 180px;
-}
-
-
-.result-table th:nth-child(5),
-.result-table td:nth-child(5) {
-    min-width: 90px;
-}
-
-
-.result-table th:nth-child(6),
-.result-table td:nth-child(6) {
-    min-width: 120px;
-}
-
-
-.result-table th:nth-child(7),
-.result-table td:nth-child(7) {
-    min-width: 80px;
-}
-
-
-.result-table th:nth-child(8),
-.result-table td:nth-child(8) {
-    min-width: 220px;
-}
-
-
-.result-table th:nth-child(9),
-.result-table td:nth-child(9) {
-    min-width: 70px;
-}
-
-
-.result-table th:nth-child(10),
-.result-table td:nth-child(10) {
-    min-width: 180px;
-}
-
-
-.result-table th:nth-child(11),
-.result-table td:nth-child(11) {
-    min-width: 180px;
-}
-
-
-/* ==========================================
-   RESULT HTML EDITOR
-========================================== */
-
-.result-cell {
-    min-width: 220px;
-
-    vertical-align: top;
-}
-
-
-.result-editor {
-    width: 100%;
-
-    min-width: 210px;
-    min-height: 28px;
-
-    padding: 4px 6px;
-
-    border:
-        1px solid #9db9df;
-
-    background: #f8fbff;
-
-    color: #174f91;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-
-    font-size: 12px;
-    font-weight: 500;
-
-    line-height: 18px;
-
-    outline: none;
-
-    white-space: normal;
-
-    overflow-wrap: break-word;
-
-    cursor: text;
-}
-
-
-.result-editor:hover:not(.result-editor-disabled) {
-    border-color: #6f9ed8;
-}
-
-
-.result-editor:focus {
-    background: #ffffff;
-
-    border-color: #1767d2;
-
-    outline:
-        1px solid #1767d2;
-}
-
-
-/* ==========================================
-   REVIEWED RESULT
-========================================== */
+/* Disabled Result editor */
 
 .result-editor-disabled {
-    background: #e7e7e7 !important;
+    border-color: #c5c5c5;
 
-    border-color: #c4c4c4;
+    background: #e8e8e8;
 
-    color: #686868;
+    color: #666666;
 
     cursor: not-allowed;
 
@@ -666,83 +1083,58 @@ body {
 }
 
 
-/*
- * Existing DB paragraph HTML
- */
-.result-editor p {
-    margin: 0;
-
-    padding: 0;
-
-    min-height: 18px;
-}
-
-
-/*
- * Existing HTML:
- *
- * R<sub>f</sub>
- */
-.result-editor sub {
-    font-size: 75%;
-
-    vertical-align: sub;
-}
-
-
-/* ==========================================
-   BOTTOM ACTION AREA
-========================================== */
+/* =========================================================
+   SAVE ACTION AREA
+========================================================= */
 
 .save-area {
-    width: 100%;
-
     display: flex;
-    justify-content: flex-end;
+
     align-items: center;
+    justify-content: flex-end;
 
     gap: 10px;
 
-    padding: 10px;
+    width: 100%;
 
-    background: #f5f5f5;
+    padding: 12px 10px;
 
-    border-top:
-        1px solid #c6c6c6;
+    background: #f3f3f3;
+
+    border-top: 1px solid #d2d2d2;
 }
 
+
+/* =========================================================
+   CHANGE INFO
+========================================================= */
 
 .change-info {
     margin-right: auto;
 
-    color: #555555;
+    padding-left: 5px;
+
+    color: #32679f;
 
     font-size: 12px;
     font-weight: 600;
 }
 
 
-/* ==========================================
+/* =========================================================
    CANCEL BUTTON
-========================================== */
+========================================================= */
 
 .cancel-button {
-    min-width: 125px;
-    height: 30px;
+    min-width: 120px;
 
-    padding: 0 16px;
+    padding: 7px 14px;
 
-    border:
-        1px solid #777777;
+    border: 1px solid #999999;
 
     background: #ffffff;
 
-    color: #333333;
-
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
+    color: #444444;
 
     font-size: 12px;
     font-weight: 700;
@@ -750,229 +1142,138 @@ body {
     cursor: pointer;
 }
 
-
 .cancel-button:hover:not(:disabled) {
-    background: #eeeeee;
+    background: #e9e9e9;
 }
 
-
 .cancel-button:disabled {
-    opacity: 0.5;
+    border-color: #cccccc;
+
+    background: #eeeeee;
+
+    color: #999999;
 
     cursor: not-allowed;
 }
 
 
-/* ==========================================
+/* =========================================================
    SAVE BUTTON
-========================================== */
+========================================================= */
 
 .save-button {
-    min-width: 125px;
-    height: 30px;
+    min-width: 130px;
 
-    padding: 0 16px;
+    padding: 7px 16px;
 
-    border:
-        1px solid #074ba6;
+    border: 1px solid #1458aa;
 
-    background: #0b61d8;
+    background: #1767d2;
 
     color: #ffffff;
 
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-
     font-size: 12px;
     font-weight: 700;
 
     cursor: pointer;
 }
 
-
 .save-button:hover:not(:disabled) {
-    background: #094da8;
+    background: #1059bd;
 }
 
-
 .save-button:disabled {
-    background: #a5a5a5;
-
     border-color: #999999;
+
+    background: #aaaaaa;
+
+    color: #eeeeee;
 
     cursor: not-allowed;
 }
 
 
-/* ==========================================
-   MOBILE
-========================================== */
+/* =========================================================
+   GENERAL DISABLED
+========================================================= */
+
+input:disabled,
+select:disabled,
+button:disabled {
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   TABLE HORIZONTAL SCROLLBAR
+========================================================= */
+
+.table-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+    background: #eeeeee;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+
+    background: #9cb8d9;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #769bc7;
+}
+
+
+/* =========================================================
+   SMALL SCREEN
+========================================================= */
 
 @media (max-width: 900px) {
 
     .registration-loader {
         flex-wrap: wrap;
-    }
 
+        padding: 8px 10px;
+    }
 
     .registration-loader input {
-        width: 250px;
+        width: 280px;
+        max-width: 100%;
     }
 
+    .method-suggestions {
+        width: 340px;
+    }
+
+    .spec-suggestions {
+        width: 360px;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL SCREEN
+========================================================= */
+
+@media (max-width: 600px) {
+
+    .method-suggestions,
+    .spec-suggestions {
+        width: 300px;
+        max-width: 80vw;
+    }
 
     .save-area {
         flex-wrap: wrap;
     }
 
-
     .change-info {
         width: 100%;
 
-        margin-right: 0;
+        margin-bottom: 5px;
     }
-}
-
-.auto-filled-input {
-    background: #eef4fb !important;
-    color: #555555 !important;
-    cursor: default !important;
-}
-
-.auto-filled-input:read-only {
-    background: #eef4fb !important;
-}
-
-.reviewed-row .auto-filled-input {
-    background: #e7e7e7 !important;
-    color: #686868 !important;
-}
-
-/* ==========================================
-   METHOD SEARCH / AUTOCOMPLETE
-========================================== */
-.method-search-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.method-search-wrapper > input {
-    width: 100%;
-    min-height: 28px;
-    padding: 4px 8px;
-    border: 1px solid #8fb2df;
-    border-radius: 2px;
-    background: #ffffff;
-    color: #174f91;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-    outline: none;
-}
-
-.method-search-wrapper > input:focus {
-    border-color: #1767d2;
-    box-shadow: 0 0 0 1px rgba(23, 103, 210, 0.15);
-}
-
-.method-suggestions {
-    position: absolute;
-    top: calc(100% + 3px);
-    left: 0;
-    z-index: 2000;
-    width: max(100%, 360px);
-    max-width: 480px;
-    max-height: 240px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    background: #ffffff;
-    border: 1px solid #9bbce3;
-    border-radius: 4px;
-    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.18);
-}
-
-.method-suggestion-item {
-    width: 100%;
-    min-height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 7px 10px;
-    margin: 0;
-    border: 0;
-    border-bottom: 1px solid #e4ecf5;
-    border-radius: 0;
-    background: #ffffff;
-    color: #1e3f67;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-    text-align: left;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-.method-suggestion-item:last-child {
-    border-bottom: none;
-}
-
-.method-suggestion-item:hover,
-.method-suggestion-item:focus {
-    background: #eaf3ff;
-    outline: none;
-}
-
-.suggestion-method {
-    flex: 1 1 auto;
-    min-width: 0;
-    color: #174f91;
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 16px;
-    text-align: left;
-    white-space: normal;
-    overflow-wrap: anywhere;
-}
-
-.suggestion-code {
-    flex: 0 0 auto;
-    min-width: 58px;
-    padding: 3px 7px;
-    border: 1px solid #c6d9ef;
-    border-radius: 3px;
-    background: #dce9fa;
-    color: #245e9d;
-    font-size: 11px;
-    font-weight: 700;
-    text-align: center;
-    white-space: nowrap;
-}
-
-.method-search-status {
-    position: absolute;
-    top: 7px;
-    right: 8px;
-    z-index: 2001;
-    padding-left: 5px;
-    background: #ffffff;
-    color: #6d7f93;
-    font-size: 10px;
-    pointer-events: none;
-}
-
-.method-suggestions::-webkit-scrollbar {
-    width: 7px;
-}
-
-.method-suggestions::-webkit-scrollbar-track {
-    background: #f2f6fb;
-}
-
-.method-suggestions::-webkit-scrollbar-thumb {
-    background: #b5cbe5;
-    border-radius: 4px;
-}
-
-.method-suggestions::-webkit-scrollbar-thumb:hover {
-    background: #8eafd5;
 }

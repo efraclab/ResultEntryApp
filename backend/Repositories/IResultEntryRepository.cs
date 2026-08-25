@@ -20,5 +20,10 @@ namespace ResultEntryApi.Repositories
             SearchMethodsAsync(
                 string searchText
             );
+
+        Task<List<SpecificationLookupDto>>
+            SearchSpecificationsAsync(
+            string searchText
+        );
     }
 }

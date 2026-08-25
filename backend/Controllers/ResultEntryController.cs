@@ -213,5 +213,43 @@ namespace ResultEntryApi.Controllers
                 );
             }
         }
+        [HttpGet("specifications/search")]
+        public async Task<IActionResult>
+    SearchSpecifications(
+        [FromQuery] string search
+    )
+        {
+            try
+            {
+                var specifications =
+                    await _service
+                        .SearchSpecificationsAsync(
+                            search
+                        );
+
+
+                return Ok(new
+                {
+                    success = true,
+                    data = specifications
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    500,
+                    new
+                    {
+                        success = false,
+
+                        message =
+                            "Unable to search specifications.",
+
+                        error =
+                            ex.Message
+                    }
+                );
+            }
+        }
     }
 }

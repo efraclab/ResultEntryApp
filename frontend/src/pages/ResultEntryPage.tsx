@@ -13,8 +13,10 @@ import {
     getMethodByCode,
     getResultsByRegistration,
     searchMethods,
+    searchSpecifications,
     updateResults,
     type MethodSuggestion,
+    type SpecificationSuggestion,
     type ResultEntry,
 } from "../services/ResultEntryService";
 
@@ -65,6 +67,7 @@ const ResultHtmlEditor = ({
             editorRef.current.innerHTML =
                 incomingHtml;
         }
+
     }, [html]);
 
 
@@ -95,11 +98,9 @@ const ResultHtmlEditor = ({
 
         const visibleText =
             editorRef.current.innerText
-                .replace(
-                    /\u00A0/g,
-                    " "
-                )
+                .replace(/\u00A0/g, " ")
                 .trim();
+
 
         if (
             visibleText === "" ||
@@ -110,6 +111,7 @@ const ResultHtmlEditor = ({
             editorRef.current.innerHTML =
                 "-";
         }
+
 
         onChange(
             updatedHtml
@@ -168,7 +170,6 @@ const MethodSearchBox = ({
     disabled,
     onSelect,
 }: MethodSearchBoxProps) => {
-
     const [
         text,
         setText,
@@ -198,12 +199,7 @@ const MethodSearchBox = ({
 
 
     /*
-     * IMPORTANT:
-     *
-     * Search should NOT run when page loads
-     * and Method value comes from database.
-     *
-     * Search starts only after user types.
+     * Prevent search on initial DB load.
      */
     const [
         hasUserTyped,
@@ -211,18 +207,7 @@ const MethodSearchBox = ({
     ] = useState(false);
 
 
-    /*
-     * When Method changes externally:
-     *
-     * Example:
-     * M Code 6174
-     *      ↓
-     * Method becomes ATP-CMSS
-     *
-     * Update textbox but DON'T search.
-     */
     useEffect(() => {
-
         setText(
             value
         );
@@ -240,11 +225,7 @@ const MethodSearchBox = ({
     }, [value]);
 
 
-    /*
-     * Search only after user has typed.
-     */
     useEffect(() => {
-
         if (
             disabled ||
             !hasUserTyped
@@ -274,9 +255,7 @@ const MethodSearchBox = ({
         const timer =
             setTimeout(
                 async () => {
-
                     try {
-
                         setSearching(
                             true
                         );
@@ -296,10 +275,8 @@ const MethodSearchBox = ({
                         setShowSuggestions(
                             true
                         );
-
                     }
                     catch (error) {
-
                         console.error(
                             "Method search failed:",
                             error
@@ -311,26 +288,21 @@ const MethodSearchBox = ({
                         setShowSuggestions(
                             false
                         );
-
                     }
                     finally {
-
                         setSearching(
                             false
                         );
                     }
-
                 },
                 300
             );
 
 
         return () => {
-
             clearTimeout(
                 timer
             );
-
         };
 
     }, [
@@ -341,7 +313,6 @@ const MethodSearchBox = ({
 
 
     return (
-
         <div className="method-search-wrapper">
 
             <input
@@ -356,20 +327,13 @@ const MethodSearchBox = ({
                 }
 
                 onChange={(e) => {
-
-                    /*
-                     * NOW we know the user
-                     * actually typed something.
-                     */
                     setHasUserTyped(
                         true
                     );
 
-
                     setText(
                         e.target.value
                     );
-
 
                     setShowSuggestions(
                         true
@@ -377,39 +341,25 @@ const MethodSearchBox = ({
                 }}
 
                 onFocus={() => {
-
-                    /*
-                     * Simply clicking/focusing
-                     * should NOT open suggestions.
-                     *
-                     * Only reopen if user has
-                     * already typed something.
-                     */
                     if (
                         hasUserTyped &&
                         suggestions.length > 0
                     ) {
-
                         setShowSuggestions(
                             true
                         );
                     }
-
                 }}
 
                 onBlur={() => {
-
                     setTimeout(
                         () => {
-
                             setShowSuggestions(
                                 false
                             );
-
                         },
                         150
                     );
-
                 }}
 
                 placeholder="Search Method"
@@ -423,13 +373,9 @@ const MethodSearchBox = ({
 
 
             {searching && (
-
                 <div className="method-search-status">
-
                     Searching...
-
                 </div>
-
             )}
 
 
@@ -453,11 +399,6 @@ const MethodSearchBox = ({
                                 className="method-suggestion-item"
 
                                 onMouseDown={(e) => {
-
-                                    /*
-                                     * Prevent input blur
-                                     * before click selection.
-                                     */
                                     e.preventDefault();
 
 
@@ -488,16 +429,12 @@ const MethodSearchBox = ({
                             >
 
                                 <span className="suggestion-method">
-
                                     {item.method}
-
                                 </span>
 
 
                                 <span className="suggestion-code">
-
                                     {item.code}
-
                                 </span>
 
                             </button>
@@ -510,9 +447,307 @@ const MethodSearchBox = ({
             )}
 
         </div>
-
     );
 };
+
+
+/* =========================================================
+   SPECIFICATION SEARCH BOX
+========================================================= */
+
+interface SpecificationSearchBoxProps {
+    value: string;
+    disabled: boolean;
+
+    onSelect: (
+        specification:
+            SpecificationSuggestion
+    ) => void;
+}
+
+
+const SpecificationSearchBox = ({
+    value,
+    disabled,
+    onSelect,
+}: SpecificationSearchBoxProps) => {
+    const [
+        text,
+        setText,
+    ] = useState(
+        value
+    );
+
+
+    const [
+        suggestions,
+        setSuggestions,
+    ] = useState<
+        SpecificationSuggestion[]
+    >([]);
+
+
+    const [
+        showSuggestions,
+        setShowSuggestions,
+    ] = useState(false);
+
+
+    const [
+        searching,
+        setSearching,
+    ] = useState(false);
+
+
+    /*
+     * Do not search automatically
+     * when DB value is loaded.
+     */
+    const [
+        hasUserTyped,
+        setHasUserTyped,
+    ] = useState(false);
+
+
+    useEffect(() => {
+        setText(
+            value
+        );
+
+        setHasUserTyped(
+            false
+        );
+
+        setSuggestions([]);
+
+        setShowSuggestions(
+            false
+        );
+
+    }, [value]);
+
+
+    useEffect(() => {
+        if (
+            disabled ||
+            !hasUserTyped
+        ) {
+            return;
+        }
+
+
+        const searchText =
+            text.trim();
+
+
+        if (
+            searchText === "" ||
+            searchText === "-"
+        ) {
+            setSuggestions([]);
+
+            setShowSuggestions(
+                false
+            );
+
+            return;
+        }
+
+
+        const timer =
+            setTimeout(
+                async () => {
+                    try {
+                        setSearching(
+                            true
+                        );
+
+
+                        const results =
+                            await searchSpecifications(
+                                searchText
+                            );
+
+
+                        setSuggestions(
+                            results
+                        );
+
+
+                        setShowSuggestions(
+                            true
+                        );
+                    }
+                    catch (error) {
+                        console.error(
+                            "Specification search failed:",
+                            error
+                        );
+
+
+                        setSuggestions([]);
+
+                        setShowSuggestions(
+                            false
+                        );
+                    }
+                    finally {
+                        setSearching(
+                            false
+                        );
+                    }
+                },
+                300
+            );
+
+
+        return () => {
+            clearTimeout(
+                timer
+            );
+        };
+
+    }, [
+        text,
+        disabled,
+        hasUserTyped,
+    ]);
+
+
+    return (
+        <div className="spec-search-wrapper">
+
+            <input
+                type="text"
+
+                value={
+                    text
+                }
+
+                disabled={
+                    disabled
+                }
+
+                onChange={(e) => {
+                    setHasUserTyped(
+                        true
+                    );
+
+                    setText(
+                        e.target.value
+                    );
+
+                    setShowSuggestions(
+                        true
+                    );
+                }}
+
+                onFocus={() => {
+                    if (
+                        hasUserTyped &&
+                        suggestions.length > 0
+                    ) {
+                        setShowSuggestions(
+                            true
+                        );
+                    }
+                }}
+
+                onBlur={() => {
+                    setTimeout(
+                        () => {
+                            setShowSuggestions(
+                                false
+                            );
+                        },
+                        150
+                    );
+                }}
+
+                placeholder="Search Spec"
+
+                title={
+                    disabled
+                        ? "HOD review completed. Editing is locked."
+                        : "Type specification and select from suggestions."
+                }
+            />
+
+
+            {searching && (
+                <div className="spec-search-status">
+                    Searching...
+                </div>
+            )}
+
+
+            {!disabled &&
+                hasUserTyped &&
+                showSuggestions &&
+                suggestions.length > 0 && (
+
+                <div className="spec-suggestions">
+
+                    {suggestions.map(
+                        (
+                            item,
+                            index
+                        ) => (
+
+                            <button
+                                type="button"
+
+                                key={
+                                    `${item.specName}-${index}`
+                                }
+
+                                className="spec-suggestion-item"
+
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+
+
+                                    setText(
+                                        item.specName
+                                    );
+
+
+                                    setHasUserTyped(
+                                        false
+                                    );
+
+
+                                    setShowSuggestions(
+                                        false
+                                    );
+
+
+                                    setSuggestions(
+                                        []
+                                    );
+
+
+                                    onSelect(
+                                        item
+                                    );
+                                }}
+                            >
+
+                                {item.specName}
+
+                            </button>
+
+                        )
+                    )}
+
+                </div>
+
+            )}
+
+        </div>
+    );
+};
+
 
 /* =========================================================
    COMMON HELPERS
@@ -577,6 +812,7 @@ const normalizeHodReview = (
 const ResultEntryPage = ({
     registrationNo: propRegistrationNo,
 }: Props) => {
+
 
     /* =====================================================
        URL PARAMETERS
@@ -662,7 +898,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       HOD REVIEW CHECK
+       HOD REVIEW
     ===================================================== */
 
     const isReviewed = (
@@ -683,6 +919,7 @@ const ResultEntryPage = ({
     const handleBack = () => {
         window.close();
 
+
         setTimeout(() => {
             if (!window.closed) {
                 window.history.back();
@@ -692,7 +929,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       LOAD REGISTRATION
+       LOAD
     ===================================================== */
 
     const loadRegistration = async (
@@ -870,7 +1107,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       GENERIC FIELD CHANGE
+       COMMON CHANGE
     ===================================================== */
 
     const handleChange = (
@@ -943,8 +1180,8 @@ const ResultEntryPage = ({
 
 
         /*
-         * Clear previous Method
-         * until new lookup finishes.
+         * Remove old Method until
+         * new M Code is validated.
          */
         handleChange(
             index,
@@ -959,7 +1196,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       M CODE → METHOD LOOKUP
+       M CODE → METHOD
     ===================================================== */
 
     const handleMethodCodeBlur = async (
@@ -1012,6 +1249,7 @@ const ResultEntryPage = ({
                 index
             );
 
+
             setError("");
 
 
@@ -1028,7 +1266,6 @@ const ResultEntryPage = ({
                             currentRow,
                             rowIndex
                         ) => {
-
                             if (
                                 rowIndex !== index
                             ) {
@@ -1081,7 +1318,6 @@ const ResultEntryPage = ({
                             currentRow,
                             rowIndex
                         ) => {
-
                             if (
                                 rowIndex !== index
                             ) {
@@ -1091,6 +1327,7 @@ const ResultEntryPage = ({
 
                             return {
                                 ...currentRow,
+
                                 method: "-",
                             };
                         }
@@ -1133,6 +1370,26 @@ const ResultEntryPage = ({
             index,
             "methodCode",
             selected.code
+        );
+
+
+        setError("");
+        setMessage("");
+    };
+
+
+    /* =====================================================
+       SPEC SELECT
+    ===================================================== */
+
+    const handleSpecificationSelect = (
+        index: number,
+        selected: SpecificationSuggestion
+    ) => {
+        handleChange(
+            index,
+            "spec",
+            selected.specName
         );
 
 
@@ -1468,7 +1725,7 @@ const ResultEntryPage = ({
 
 
         /*
-         * M Code exists but Method wasn't resolved.
+         * M Code must have matching Method.
          */
         const invalidMethodRow =
             changedRows.find(
@@ -1505,7 +1762,7 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       MANUAL LOADER
+       MANUAL LOAD
     ===================================================== */
 
     const showManualRegistrationLoader =
@@ -1539,7 +1796,9 @@ const ResultEntryPage = ({
 
                 <button
                     type="button"
+
                     className="back-button"
+
                     onClick={
                         handleBack
                     }
@@ -1563,14 +1822,17 @@ const ResultEntryPage = ({
 
                     <input
                         type="text"
+
                         value={
                             registrationNo
                         }
+
                         onChange={(e) =>
                             setRegistrationNo(
                                 e.target.value
                             )
                         }
+
                         onKeyDown={(e) => {
                             if (
                                 e.key ===
@@ -1584,16 +1846,20 @@ const ResultEntryPage = ({
 
                     <button
                         type="button"
+
                         onClick={() =>
                             void loadRegistration()
                         }
+
                         disabled={
                             loading
                         }
                     >
+
                         {loading
                             ? "Loading..."
                             : "Load"}
+
                     </button>
 
                 </div>
@@ -1606,7 +1872,9 @@ const ResultEntryPage = ({
             {loading && (
 
                 <div className="loading-message">
+
                     Loading registration data...
+
                 </div>
 
             )}
@@ -1617,19 +1885,23 @@ const ResultEntryPage = ({
             {error && (
 
                 <div className="error-message">
+
                     {error}
+
                 </div>
 
             )}
 
 
-            {/* MESSAGE */}
+            {/* SUCCESS */}
 
             {!loading &&
                 message && (
 
                 <div className="success-message">
+
                     {message}
+
                 </div>
 
             )}
@@ -1822,8 +2094,11 @@ const ResultEntryPage = ({
 
                                                         <input
                                                             type="text"
+
                                                             value="Loading..."
+
                                                             readOnly
+
                                                             className="auto-filled-input"
                                                         />
 
@@ -1859,12 +2134,15 @@ const ResultEntryPage = ({
 
                                                     <input
                                                         type="text"
+
                                                         value={
                                                             row.unit
                                                         }
+
                                                         disabled={
                                                             reviewed
                                                         }
+
                                                         onChange={(e) =>
                                                             handleChange(
                                                                 index,
@@ -1883,12 +2161,15 @@ const ResultEntryPage = ({
 
                                                     <input
                                                         type="text"
+
                                                         value={
                                                             row.instrument
                                                         }
+
                                                         disabled={
                                                             reviewed
                                                         }
+
                                                         onChange={(e) =>
                                                             handleChange(
                                                                 index,
@@ -1907,12 +2188,15 @@ const ResultEntryPage = ({
 
                                                     <input
                                                         type="text"
+
                                                         value={
                                                             row.loq
                                                         }
+
                                                         disabled={
                                                             reviewed
                                                         }
+
                                                         onChange={(e) =>
                                                             handleChange(
                                                                 index,
@@ -1933,9 +2217,11 @@ const ResultEntryPage = ({
                                                         html={
                                                             row.result
                                                         }
+
                                                         disabled={
                                                             reviewed
                                                         }
+
                                                         onChange={(html) =>
                                                             handleResultChange(
                                                                 index,
@@ -1957,9 +2243,11 @@ const ResultEntryPage = ({
                                                                 row.nabl
                                                             )
                                                         }
+
                                                         disabled={
                                                             reviewed
                                                         }
+
                                                         onChange={(e) =>
                                                             handleChange(
                                                                 index,
@@ -1982,23 +2270,25 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* SPEC */}
+                                                {/* SPEC SEARCH */}
 
                                                 <td>
 
-                                                    <input
-                                                        type="text"
+                                                    <SpecificationSearchBox
                                                         value={
                                                             row.spec
                                                         }
+
                                                         disabled={
                                                             reviewed
                                                         }
-                                                        onChange={(e) =>
-                                                            handleChange(
+
+                                                        onSelect={(
+                                                            selected
+                                                        ) =>
+                                                            handleSpecificationSelect(
                                                                 index,
-                                                                "spec",
-                                                                e.target.value
+                                                                selected
                                                             )
                                                         }
                                                     />
@@ -2012,12 +2302,15 @@ const ResultEntryPage = ({
 
                                                     <input
                                                         type="text"
+
                                                         value={
                                                             row.refMethod
                                                         }
+
                                                         disabled={
                                                             reviewed
                                                         }
+
                                                         onChange={(e) =>
                                                             handleChange(
                                                                 index,
@@ -2057,26 +2350,34 @@ const ResultEntryPage = ({
 
                         <button
                             type="button"
+
                             className="cancel-button"
+
                             onClick={
                                 handleCancelChanges
                             }
+
                             disabled={
                                 saving ||
                                 methodLookupIndex !== null ||
                                 modifiedRowsCount === 0
                             }
                         >
+
                             Cancel Changes
+
                         </button>
 
 
                         <button
                             type="button"
+
                             className="save-button"
+
                             onClick={() =>
                                 void handleSave()
                             }
+
                             disabled={
                                 saving ||
                                 methodLookupIndex !== null ||

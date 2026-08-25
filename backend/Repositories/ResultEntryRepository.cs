@@ -743,5 +743,71 @@ namespace ResultEntryApi.Repositories
 
             return results;
         }
+        public async Task<List<SpecificationLookupDto>>
+    SearchSpecificationsAsync(
+        string searchText
+    )
+        {
+            const string sql = @"
+        SELECT DISTINCT TOP 5
+            SpecName
+        FROM SpecificationMst
+        WHERE SpecName IS NOT NULL
+          AND LTRIM(RTRIM(SpecName)) <> ''
+          AND SpecName LIKE @SearchText
+        ORDER BY SpecName;
+    ";
+
+            var results =
+                new List<SpecificationLookupDto>();
+
+
+            await using var connection =
+                new SqlConnection(
+                    _connectionString
+                );
+
+
+            await connection.OpenAsync();
+
+
+            await using var command =
+                new SqlCommand(
+                    sql,
+                    connection
+                );
+
+
+            command.Parameters.Add(
+                "@SearchText",
+                SqlDbType.VarChar
+            ).Value =
+                $"%{searchText.Trim()}%";
+
+
+            await using var reader =
+                await command
+                    .ExecuteReaderAsync();
+
+
+            while (
+                await reader.ReadAsync()
+            )
+            {
+                results.Add(
+                    new SpecificationLookupDto
+                    {
+                        SpecName =
+                            reader["SpecName"]
+                                ?.ToString()
+                                ?.Trim()
+                            ?? ""
+                    }
+                );
+            }
+
+
+            return results;
+        }
     }
 }

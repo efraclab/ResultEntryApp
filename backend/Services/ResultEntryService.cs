@@ -150,5 +150,27 @@ namespace ResultEntryApi.Services
                     searchText.Trim()
                 );
         }
+        public async Task<List<SpecificationLookupDto>>
+    SearchSpecificationsAsync(
+        string searchText
+    )
+        {
+            if (
+                string.IsNullOrWhiteSpace(
+                    searchText
+                )
+            )
+            {
+                return new List<
+                    SpecificationLookupDto
+                >();
+            }
+
+
+            return await _repository
+                .SearchSpecificationsAsync(
+                    searchText.Trim()
+                );
+        }
     }
 }

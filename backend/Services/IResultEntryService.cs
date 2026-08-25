@@ -19,5 +19,9 @@ namespace ResultEntryApi.Services
         SearchMethodsAsync(
         string searchText
     );
+        Task<List<SpecificationLookupDto>>
+        SearchSpecificationsAsync(
+            string searchText
+        );
     }
 }
