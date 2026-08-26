@@ -1,16 +1,6 @@
 import axios from "axios";
 
 
-/* =========================================================
-   API BASE URL
-
-   Local fallback:
-   http://localhost:5096/api
-
-   Remote .env example:
-   VITE_API_URL=http://192.168.2.220:5085/api
-========================================================= */
-
 const API_BASE_URL =
     import.meta.env.VITE_API_URL ||
     "http://localhost:5096/api";
@@ -25,6 +15,13 @@ export interface ResultEntry {
 
     testCode: string;
 
+    /*
+     * TRN2DEPARTCD
+     *
+     * Hidden from normal table.
+     */
+    labCode: string;
+
     methodCode: string;
 
     method: string;
@@ -43,22 +40,18 @@ export interface ResultEntry {
 
     refMethod: string;
 
-    /*
-     * TRN2HODREVIEW
-     *
-     * Y = reviewed / editing locked
-     * anything else = editable
-     */
     hodReview: string;
 }
 
 
 /* =========================================================
-   UPDATE RESULT ROW
+   UPDATE ROW
 ========================================================= */
 
 export interface UpdateResultRow {
     testCode: string;
+
+    labCode: string;
 
     methodCode: string;
 
@@ -81,7 +74,7 @@ export interface UpdateResultRow {
 
 
 /* =========================================================
-   GET RESULT RESPONSE
+   RESPONSE TYPES
 ========================================================= */
 
 interface GetResultsResponse {
@@ -95,10 +88,6 @@ interface GetResultsResponse {
 }
 
 
-/* =========================================================
-   UPDATE RESULT RESPONSE
-========================================================= */
-
 export interface UpdateResultsResponse {
     success: boolean;
 
@@ -107,10 +96,7 @@ export interface UpdateResultsResponse {
 
 
 /* =========================================================
-   METHOD LOOKUP RESPONSE
-
-   Used for:
-   M Code -> Method
+   METHOD
 ========================================================= */
 
 interface MethodLookupResponse {
@@ -121,13 +107,6 @@ interface MethodLookupResponse {
     method: string;
 }
 
-
-/* =========================================================
-   METHOD SEARCH
-
-   Used for:
-   Method -> M Code
-========================================================= */
 
 export interface MethodSuggestion {
     code: string;
@@ -144,7 +123,7 @@ interface MethodSearchResponse {
 
 
 /* =========================================================
-   SPECIFICATION SEARCH
+   SPECIFICATION
 ========================================================= */
 
 export interface SpecificationSuggestion {
@@ -160,176 +139,323 @@ interface SpecificationSearchResponse {
 
 
 /* =========================================================
-   GET RESULTS BY REGISTRATION
+   ADMIN
 ========================================================= */
 
-export const getResultsByRegistration = async (
-    registrationNo: string,
-    labCode: string
-): Promise<ResultEntry[]> => {
+export interface AdminLoginResponse {
+    success: boolean;
 
-    const response =
-        await axios.get<GetResultsResponse>(
-            `${API_BASE_URL}/result-entry`,
-            {
-                params: {
-                    registrationNo,
-                    labCode,
-                },
-            }
-        );
+    token: string;
 
-    return response.data.data;
+    username: string;
+}
+
+
+interface AdminValidateResponse {
+    success: boolean;
+
+    valid: boolean;
+}
+
+
+const createAuthHeaders = (
+    adminToken?: string
+) => {
+
+    if (!adminToken) {
+        return {};
+    }
+
+
+    return {
+        Authorization:
+            `Bearer ${adminToken}`,
+    };
 };
 
 
 /* =========================================================
-   UPDATE RESULTS
+   ADMIN LOGIN
 ========================================================= */
 
-export const updateResults = async (
-    registrationNo: string,
-    userId: string,
-    labCode: string,
-    rows: UpdateResultRow[]
-): Promise<UpdateResultsResponse> => {
+export const adminLogin = async (
+    username: string,
+    password: string
+): Promise<AdminLoginResponse> => {
 
     const response =
-        await axios.put<UpdateResultsResponse>(
-            `${API_BASE_URL}/result-entry`,
+        await axios.post<
+            AdminLoginResponse
+        >(
+            `${API_BASE_URL}/admin-auth/login`,
             {
-                registrationNo,
-                userId,
-                labCode,
-                rows,
+                username,
+                password,
             }
         );
+
 
     return response.data;
 };
 
 
 /* =========================================================
+   VALIDATE ADMIN
+========================================================= */
+
+export const validateAdminSession =
+    async (
+        token: string
+    ): Promise<boolean> => {
+
+        if (!token) {
+            return false;
+        }
+
+
+        try {
+
+            const response =
+                await axios.get<
+                    AdminValidateResponse
+                >(
+                    `${API_BASE_URL}/admin-auth/validate`,
+                    {
+                        headers:
+                            createAuthHeaders(
+                                token
+                            ),
+                    }
+                );
+
+
+            return (
+                response.data.success &&
+                response.data.valid
+            );
+
+        }
+        catch {
+
+            return false;
+        }
+    };
+
+
+/* =========================================================
+   GET REGISTRATION
+========================================================= */
+
+export const getResultsByRegistration =
+    async (
+        registrationNo: string,
+        labCode?: string,
+        adminToken?: string
+    ): Promise<ResultEntry[]> => {
+
+        const params:
+            Record<string, string> =
+        {
+            registrationNo:
+                registrationNo.trim(),
+        };
+
+
+        if (labCode?.trim()) {
+
+            params.labCode =
+                labCode.trim();
+        }
+
+
+        const response =
+            await axios.get<
+                GetResultsResponse
+            >(
+                `${API_BASE_URL}/result-entry`,
+                {
+                    params,
+
+                    headers:
+                        createAuthHeaders(
+                            adminToken
+                        ),
+                }
+            );
+
+
+        return response.data.data ?? [];
+    };
+
+
+/* =========================================================
+   UPDATE RESULTS
+========================================================= */
+
+export const updateResults =
+    async (
+        registrationNo: string,
+        userId: string,
+        labCode: string,
+        rows: UpdateResultRow[],
+        adminToken?: string
+    ): Promise<UpdateResultsResponse> => {
+
+        const response =
+            await axios.put<
+                UpdateResultsResponse
+            >(
+                `${API_BASE_URL}/result-entry`,
+                {
+                    registrationNo,
+                    userId,
+                    labCode,
+                    rows,
+                },
+                {
+                    headers:
+                        createAuthHeaders(
+                            adminToken
+                        ),
+                }
+            );
+
+
+        return response.data;
+    };
+
+
+/* =========================================================
    M CODE -> METHOD
-
-   Backend:
-   GET /api/result-entry/method?methodCode=7471
-
-   Example return:
-   QA.16.4.7
 ========================================================= */
 
-export const getMethodByCode = async (
-    methodCode: string
-): Promise<string> => {
+export const getMethodByCode =
+    async (
+        methodCode: string
+    ): Promise<string> => {
 
-    const cleanedMethodCode =
-        methodCode.trim();
-
-
-    if (!cleanedMethodCode) {
-        return "";
-    }
+        const cleaned =
+            methodCode.trim();
 
 
-    const response =
-        await axios.get<MethodLookupResponse>(
-            `${API_BASE_URL}/result-entry/method`,
-            {
-                params: {
-                    methodCode:
-                        cleanedMethodCode,
-                },
-            }
-        );
+        if (
+            !cleaned ||
+            cleaned === "-"
+        ) {
+            return "-";
+        }
 
 
-    return response.data.method;
-};
+        const response =
+            await axios.get<
+                MethodLookupResponse
+            >(
+                `${API_BASE_URL}/result-entry/method`,
+                {
+                    params: {
+                        methodCode:
+                            cleaned,
+                    },
+                }
+            );
+
+
+        return response.data.method;
+    };
 
 
 /* =========================================================
-   SEARCH METHODS
-
-   Backend:
-   GET /api/result-entry/methods/search?search=qa
-
-   Returns:
-   [
-       {
-           code: "7471",
-           method: "QA.16.4.7"
-       }
-   ]
+   METHOD SEARCH
 ========================================================= */
 
-export const searchMethods = async (
-    search: string
-): Promise<MethodSuggestion[]> => {
+export const searchMethods =
+    async (
+        search: string
+    ): Promise<MethodSuggestion[]> => {
 
-    const cleanedSearch =
-        search.trim();
-
-
-    if (!cleanedSearch) {
-        return [];
-    }
+        const cleaned =
+            search.trim();
 
 
-    const response =
-        await axios.get<MethodSearchResponse>(
-            `${API_BASE_URL}/result-entry/methods/search`,
-            {
-                params: {
-                    search:
-                        cleanedSearch,
-                },
-            }
-        );
+        if (
+            !cleaned ||
+            cleaned === "-"
+        ) {
+            return [];
+        }
 
 
-    return response.data.data ?? [];
-};
+        const response =
+            await axios.get<
+                MethodSearchResponse
+            >(
+                `${API_BASE_URL}/result-entry/methods/search`,
+                {
+                    params: {
+                        search:
+                            cleaned,
+                    },
+                }
+            );
+
+
+        return response.data.data ?? [];
+    };
 
 
 /* =========================================================
-   SEARCH SPECIFICATIONS
-
-   Source table:
-   SpecificationMst
-
-   Search column:
-   SpecName
-
-   Backend:
-   GET
-   /api/result-entry/specifications/search?search=absent
+   SPEC SEARCH
 ========================================================= */
 
-export const searchSpecifications = async (
-    search: string
-): Promise<SpecificationSuggestion[]> => {
+export const searchSpecifications =
+    async (
+        search: string
+    ): Promise<
+        SpecificationSuggestion[]
+    > => {
 
-    const cleanedSearch =
-        search.trim();
+        const cleaned =
+            search.trim();
 
 
-    if (!cleanedSearch) {
-        return [];
+        if (
+            !cleaned ||
+            cleaned === "-"
+        ) {
+            return [];
+        }
+
+
+        const response =
+            await axios.get<
+                SpecificationSearchResponse
+            >(
+                `${API_BASE_URL}/result-entry/specifications/search`,
+                {
+                    params: {
+                        search:
+                            cleaned,
+                    },
+                }
+            );
+
+
+        return response.data.data ?? [];
+    };
+
+    export const adminLogout = async (
+    token: string
+): Promise<void> => {
+
+    if (!token) {
+        return;
     }
 
-
-    const response =
-        await axios.get<SpecificationSearchResponse>(
-            `${API_BASE_URL}/result-entry/specifications/search`,
-            {
-                params: {
-                    search:
-                        cleanedSearch,
-                },
-            }
-        );
-
-
-    return response.data.data ?? [];
+    await axios.post(
+        `${API_BASE_URL}/admin-auth/logout`,
+        {},
+        {
+            headers: createAuthHeaders(token),
+        }
+    );
 };

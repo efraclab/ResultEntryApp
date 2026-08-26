@@ -6,78 +6,154 @@ import {
 } from "react";
 
 import {
+    useNavigate,
     useSearchParams,
 } from "react-router-dom";
 
 import {
+    adminLogout,
     getMethodByCode,
     getResultsByRegistration,
     searchMethods,
     searchSpecifications,
     updateResults,
+    validateAdminSession,
     type MethodSuggestion,
-    type SpecificationSuggestion,
     type ResultEntry,
+    type SpecificationSuggestion,
 } from "../services/ResultEntryService";
 
 import "./ResultEntryPage.css";
 
 
+const ADMIN_TOKEN_KEY =
+    "result_entry_admin_token";
+
+
+interface ResultEditorProps {
+    html: string;
+
+    disabled?: boolean;
+
+    onChange:
+    (html: string) => void;
+}
+
+
 /* =========================================================
-   PROPS
+   HELPERS
 ========================================================= */
 
-interface Props {
-    registrationNo?: string;
-}
+const displayValue = (
+    value:
+        string |
+        null |
+        undefined
+): string => {
+
+    if (
+        value == null ||
+        value.trim() === ""
+    ) {
+        return "-";
+    }
+
+
+    return value;
+};
+
+
+const saveValue = (
+    value:
+        string |
+        null |
+        undefined
+): string => {
+
+    if (
+        value == null ||
+        value.trim() === ""
+    ) {
+        return "-";
+    }
+
+
+    return value;
+};
+
+
+const normalizeNabl = (
+    value:
+        string |
+        null |
+        undefined
+): "Y" | "N" => {
+
+    return (
+        value
+            ?.trim()
+            .toUpperCase() === "Y"
+    )
+        ? "Y"
+        : "N";
+};
+
+
+const isHodReviewed = (
+    row: ResultEntry
+): boolean => {
+
+    return (
+        row.hodReview
+            ?.trim()
+            .toUpperCase() === "Y"
+    );
+};
 
 
 /* =========================================================
    RESULT EDITOR
 ========================================================= */
 
-interface ResultEditorProps {
-    html: string;
-    disabled?: boolean;
-    onChange: (html: string) => void;
-}
-
-
 const ResultHtmlEditor = ({
     html,
     disabled = false,
     onChange,
 }: ResultEditorProps) => {
+
     const editorRef =
-        useRef<HTMLDivElement>(null);
+        useRef<HTMLDivElement>(
+            null
+        );
 
 
     useEffect(() => {
+
         if (!editorRef.current) {
             return;
         }
 
-        const incomingHtml =
-            html || "";
 
         if (
             editorRef.current.innerHTML !==
-            incomingHtml
+            html
         ) {
             editorRef.current.innerHTML =
-                incomingHtml;
+                html || "-";
         }
 
     }, [html]);
 
 
     const handleInput = () => {
+
         if (
             disabled ||
             !editorRef.current
         ) {
             return;
         }
+
 
         onChange(
             editorRef.current.innerHTML
@@ -86,6 +162,7 @@ const ResultHtmlEditor = ({
 
 
     const handleBlur = () => {
+
         if (
             disabled ||
             !editorRef.current
@@ -93,28 +170,30 @@ const ResultHtmlEditor = ({
             return;
         }
 
-        let updatedHtml =
-            editorRef.current.innerHTML;
 
         const visibleText =
-            editorRef.current.innerText
-                .replace(/\u00A0/g, " ")
+            editorRef.current
+                .innerText
+                .replace(
+                    /\u00A0/g,
+                    " "
+                )
                 .trim();
 
 
-        if (
-            visibleText === "" ||
-            updatedHtml.trim() === ""
-        ) {
-            updatedHtml = "-";
+        if (!visibleText) {
 
             editorRef.current.innerHTML =
                 "-";
+
+            onChange("-");
+
+            return;
         }
 
 
         onChange(
-            updatedHtml
+            editorRef.current.innerHTML
         );
     };
 
@@ -122,29 +201,29 @@ const ResultHtmlEditor = ({
     return (
         <div
             ref={editorRef}
+
             className={
                 disabled
                     ? "result-editor result-editor-disabled"
                     : "result-editor"
             }
+
             contentEditable={
                 !disabled
             }
+
             suppressContentEditableWarning
+
             onInput={
                 disabled
                     ? undefined
                     : handleInput
             }
+
             onBlur={
                 disabled
                     ? undefined
                     : handleBlur
-            }
-            title={
-                disabled
-                    ? "HOD review completed. Editing is locked."
-                    : ""
             }
         />
     );
@@ -152,18 +231,22 @@ const ResultHtmlEditor = ({
 
 
 /* =========================================================
-   METHOD SEARCH BOX
+   METHOD SEARCH
 ========================================================= */
 
 interface MethodSearchBoxProps {
     value: string;
+
     disabled: boolean;
 
-    onSelect: (
-        method: MethodSuggestion
+    onSelect:
+    (
+        item:
+            MethodSuggestion
     ) => void;
 
-    onManualDash: () => void;
+    onManualDash:
+    () => void;
 }
 
 
@@ -173,6 +256,7 @@ const MethodSearchBox = ({
     onSelect,
     onManualDash,
 }: MethodSearchBoxProps) => {
+
     const [
         text,
         setText,
@@ -190,48 +274,41 @@ const MethodSearchBox = ({
 
 
     const [
+        searching,
+        setSearching,
+    ] = useState(false);
+
+
+    const [
         showSuggestions,
         setShowSuggestions,
     ] = useState(false);
 
 
     const [
-        searching,
-        setSearching,
-    ] = useState(false);
-
-
-    /*
-     * Prevent search on initial DB load.
-     */
-    const [
-        hasUserTyped,
-        setHasUserTyped,
+        userTyped,
+        setUserTyped,
     ] = useState(false);
 
 
     useEffect(() => {
-        setText(
-            value
-        );
 
-        setHasUserTyped(
-            false
-        );
+        setText(value);
+
+        setUserTyped(false);
 
         setSuggestions([]);
 
-        setShowSuggestions(
-            false
-        );
+        setShowSuggestions(false);
 
     }, [value]);
 
 
     useEffect(() => {
+
         if (
             disabled ||
-            !hasUserTyped
+            !userTyped
         ) {
             return;
         }
@@ -242,26 +319,25 @@ const MethodSearchBox = ({
 
 
         if (
-            searchText === "" ||
+            !searchText ||
             searchText === "-"
         ) {
+
             setSuggestions([]);
 
-            setShowSuggestions(
-                false
-            );
+            setShowSuggestions(false);
 
             return;
         }
 
 
         const timer =
-            setTimeout(
+            window.setTimeout(
                 async () => {
+
                     try {
-                        setSearching(
-                            true
-                        );
+
+                        setSearching(true);
 
 
                         const results =
@@ -274,44 +350,36 @@ const MethodSearchBox = ({
                             results
                         );
 
-
                         setShowSuggestions(
                             true
                         );
-                    }
-                    catch (error) {
-                        console.error(
-                            "Method search failed:",
-                            error
-                        );
 
+                    }
+                    catch {
 
                         setSuggestions([]);
 
-                        setShowSuggestions(
-                            false
-                        );
+                        setShowSuggestions(false);
+
                     }
                     finally {
-                        setSearching(
-                            false
-                        );
+
+                        setSearching(false);
                     }
                 },
                 300
             );
 
 
-        return () => {
-            clearTimeout(
+        return () =>
+            window.clearTimeout(
                 timer
             );
-        };
 
     }, [
         text,
         disabled,
-        hasUserTyped,
+        userTyped,
     ]);
 
 
@@ -321,38 +389,26 @@ const MethodSearchBox = ({
             <input
                 type="text"
 
-                value={
-                    text
-                }
+                value={text}
 
-                disabled={
-                    disabled
-                }
+                disabled={disabled}
+
+                placeholder="Search Method"
 
                 onChange={(e) => {
-                    const newValue =
+
+                    const value =
                         e.target.value;
 
-                    setText(
-                        newValue
-                    );
+
+                    setText(value);
 
 
-                    /*
-                     * Special rule:
-                     *
-                     * Method = "-"
-                     * =>
-                     * M Code = "-"
-                     *
-                     * No search required.
-                     */
                     if (
-                        newValue.trim() === "-"
+                        value.trim() === "-"
                     ) {
-                        setHasUserTyped(
-                            false
-                        );
+
+                        setUserTyped(false);
 
                         setSuggestions([]);
 
@@ -366,56 +422,36 @@ const MethodSearchBox = ({
                     }
 
 
-                    setHasUserTyped(
-                        true
-                    );
+                    setUserTyped(true);
 
-                    setShowSuggestions(
-                        true
-                    );
-                }}
-
-                onFocus={() => {
-                    if (
-                        hasUserTyped &&
-                        suggestions.length > 0
-                    ) {
-                        setShowSuggestions(
-                            true
-                        );
-                    }
+                    setShowSuggestions(true);
                 }}
 
                 onBlur={() => {
-                    setTimeout(
-                        () => {
+
+                    window.setTimeout(
+                        () =>
                             setShowSuggestions(
                                 false
-                            );
-                        },
+                            ),
                         150
                     );
+
                 }}
-
-                placeholder="Search Method"
-
-                title={
-                    disabled
-                        ? "HOD review completed. Editing is locked."
-                        : "Type Method name and select from suggestions."
-                }
             />
 
 
             {searching && (
+
                 <div className="method-search-status">
                     Searching...
                 </div>
+
             )}
 
 
             {!disabled &&
-                hasUserTyped &&
+                userTyped &&
                 showSuggestions &&
                 suggestions.length > 0 && (
 
@@ -425,15 +461,16 @@ const MethodSearchBox = ({
                             (item) => (
 
                                 <button
-                                    type="button"
-
                                     key={
                                         `${item.code}-${item.method}`
                                     }
 
+                                    type="button"
+
                                     className="method-suggestion-item"
 
                                     onMouseDown={(e) => {
+
                                         e.preventDefault();
 
 
@@ -441,32 +478,21 @@ const MethodSearchBox = ({
                                             item.method
                                         );
 
+                                        setUserTyped(false);
 
-                                        setHasUserTyped(
-                                            false
-                                        );
-
+                                        setSuggestions([]);
 
                                         setShowSuggestions(
                                             false
                                         );
 
-
-                                        setSuggestions(
-                                            []
-                                        );
-
-
-                                        onSelect(
-                                            item
-                                        );
+                                        onSelect(item);
                                     }}
                                 >
 
                                     <span className="suggestion-method">
                                         {item.method}
                                     </span>
-
 
                                     <span className="suggestion-code">
                                         {item.code}
@@ -487,15 +513,17 @@ const MethodSearchBox = ({
 
 
 /* =========================================================
-   SPECIFICATION SEARCH BOX
+   SPEC SEARCH
 ========================================================= */
 
-interface SpecificationSearchBoxProps {
+interface SpecSearchProps {
     value: string;
+
     disabled: boolean;
 
-    onSelect: (
-        specification:
+    onSelect:
+    (
+        item:
             SpecificationSuggestion
     ) => void;
 }
@@ -505,13 +533,12 @@ const SpecificationSearchBox = ({
     value,
     disabled,
     onSelect,
-}: SpecificationSearchBoxProps) => {
+}: SpecSearchProps) => {
+
     const [
         text,
         setText,
-    ] = useState(
-        value
-    );
+    ] = useState(value);
 
 
     const [
@@ -523,8 +550,8 @@ const SpecificationSearchBox = ({
 
 
     const [
-        showSuggestions,
-        setShowSuggestions,
+        userTyped,
+        setUserTyped,
     ] = useState(false);
 
 
@@ -534,38 +561,30 @@ const SpecificationSearchBox = ({
     ] = useState(false);
 
 
-    /*
-     * Do not search automatically
-     * when DB value is loaded.
-     */
     const [
-        hasUserTyped,
-        setHasUserTyped,
+        showSuggestions,
+        setShowSuggestions,
     ] = useState(false);
 
 
     useEffect(() => {
-        setText(
-            value
-        );
 
-        setHasUserTyped(
-            false
-        );
+        setText(value);
+
+        setUserTyped(false);
 
         setSuggestions([]);
 
-        setShowSuggestions(
-            false
-        );
+        setShowSuggestions(false);
 
     }, [value]);
 
 
     useEffect(() => {
+
         if (
             disabled ||
-            !hasUserTyped
+            !userTyped
         ) {
             return;
         }
@@ -576,76 +595,65 @@ const SpecificationSearchBox = ({
 
 
         if (
-            searchText === "" ||
+            !searchText ||
             searchText === "-"
         ) {
+
             setSuggestions([]);
 
-            setShowSuggestions(
-                false
-            );
+            setShowSuggestions(false);
 
             return;
         }
 
 
         const timer =
-            setTimeout(
+            window.setTimeout(
                 async () => {
+
                     try {
-                        setSearching(
-                            true
-                        );
+
+                        setSearching(true);
 
 
-                        const results =
+                        const result =
                             await searchSpecifications(
                                 searchText
                             );
 
 
-                        setSuggestions(
-                            results
-                        );
-
+                        setSuggestions(result);
 
                         setShowSuggestions(
                             true
                         );
-                    }
-                    catch (error) {
-                        console.error(
-                            "Specification search failed:",
-                            error
-                        );
 
+                    }
+                    catch {
 
                         setSuggestions([]);
 
-                        setShowSuggestions(
-                            false
-                        );
+                        setShowSuggestions(false);
+
                     }
                     finally {
-                        setSearching(
-                            false
-                        );
+
+                        setSearching(false);
                     }
                 },
                 300
             );
 
 
-        return () => {
-            clearTimeout(
+        return () =>
+            window.clearTimeout(
                 timer
             );
-        };
 
     }, [
         text,
         disabled,
-        hasUserTyped,
+        userTyped,
     ]);
 
 
@@ -655,69 +663,50 @@ const SpecificationSearchBox = ({
             <input
                 type="text"
 
-                value={
-                    text
-                }
+                value={text}
 
-                disabled={
-                    disabled
-                }
+                disabled={disabled}
+
+                placeholder="Search Spec"
 
                 onChange={(e) => {
-                    setHasUserTyped(
-                        true
-                    );
 
                     setText(
                         e.target.value
                     );
+
+                    setUserTyped(true);
 
                     setShowSuggestions(
                         true
                     );
                 }}
 
-                onFocus={() => {
-                    if (
-                        hasUserTyped &&
-                        suggestions.length > 0
-                    ) {
-                        setShowSuggestions(
-                            true
-                        );
-                    }
-                }}
-
                 onBlur={() => {
-                    setTimeout(
-                        () => {
+
+                    window.setTimeout(
+                        () =>
                             setShowSuggestions(
                                 false
-                            );
-                        },
+                            ),
                         150
                     );
+
                 }}
-
-                placeholder="Search Spec"
-
-                title={
-                    disabled
-                        ? "HOD review completed. Editing is locked."
-                        : "Type specification and select from suggestions."
-                }
             />
 
 
             {searching && (
+
                 <div className="spec-search-status">
                     Searching...
                 </div>
+
             )}
 
 
             {!disabled &&
-                hasUserTyped &&
+                userTyped &&
                 showSuggestions &&
                 suggestions.length > 0 && (
 
@@ -730,15 +719,16 @@ const SpecificationSearchBox = ({
                             ) => (
 
                                 <button
-                                    type="button"
-
                                     key={
                                         `${item.specName}-${index}`
                                     }
 
+                                    type="button"
+
                                     className="spec-suggestion-item"
 
                                     onMouseDown={(e) => {
+
                                         e.preventDefault();
 
 
@@ -746,30 +736,18 @@ const SpecificationSearchBox = ({
                                             item.specName
                                         );
 
+                                        setUserTyped(false);
 
-                                        setHasUserTyped(
-                                            false
-                                        );
-
+                                        setSuggestions([]);
 
                                         setShowSuggestions(
                                             false
                                         );
 
-
-                                        setSuggestions(
-                                            []
-                                        );
-
-
-                                        onSelect(
-                                            item
-                                        );
+                                        onSelect(item);
                                     }}
                                 >
-
                                     {item.specName}
-
                                 </button>
 
                             )
@@ -785,73 +763,14 @@ const SpecificationSearchBox = ({
 
 
 /* =========================================================
-   COMMON HELPERS
-========================================================= */
-
-const displayValue = (
-    value: string | null | undefined
-): string => {
-    if (
-        value === null ||
-        value === undefined ||
-        value.trim() === ""
-    ) {
-        return "-";
-    }
-
-    return value;
-};
-
-
-const saveValue = (
-    value: string | null | undefined
-): string => {
-    if (
-        value === null ||
-        value === undefined ||
-        value.trim() === ""
-    ) {
-        return "-";
-    }
-
-    return value;
-};
-
-
-const normalizeNabl = (
-    value: string | null | undefined
-): "Y" | "N" => {
-    return value
-        ?.trim()
-        .toUpperCase() === "Y"
-        ? "Y"
-        : "N";
-};
-
-
-const normalizeHodReview = (
-    value: string | null | undefined
-): "Y" | "N" => {
-    return value
-        ?.trim()
-        .toUpperCase() === "Y"
-        ? "Y"
-        : "N";
-};
-
-
-/* =========================================================
    PAGE
 ========================================================= */
 
-const ResultEntryPage = ({
-    registrationNo: propRegistrationNo,
-}: Props) => {
+const ResultEntryPage = () => {
 
+    const navigate =
+        useNavigate();
 
-    /* =====================================================
-       URL PARAMETERS
-    ===================================================== */
 
     const [
         searchParams,
@@ -869,26 +788,52 @@ const ResultEntryPage = ({
             .get("userId")
             ?.trim() || "";
 
+
     const labCodeFromUrl =
         searchParams
             .get("labCode")
             ?.trim() || "";
 
-    const initialRegistrationNo =
-        registrationFromUrl ||
-        propRegistrationNo ||
-        "";
+
+    const hasAnyExternalArgument =
+        !!registrationFromUrl ||
+        !!userIdFromUrl ||
+        !!labCodeFromUrl;
 
 
-    /* =====================================================
-       STATE
-    ===================================================== */
+    const hasCompleteExternalArguments =
+        !!registrationFromUrl &&
+        !!userIdFromUrl &&
+        !!labCodeFromUrl;
+
+
+    const [
+        adminToken,
+        setAdminToken,
+    ] = useState(
+        sessionStorage.getItem(
+            ADMIN_TOKEN_KEY
+        ) || ""
+    );
+
+
+    const [
+        isAdmin,
+        setIsAdmin,
+    ] = useState(false);
+
+
+    const [
+        accessChecking,
+        setAccessChecking,
+    ] = useState(true);
+
 
     const [
         registrationNo,
         setRegistrationNo,
     ] = useState(
-        initialRegistrationNo
+        registrationFromUrl
     );
 
 
@@ -931,231 +876,306 @@ const ResultEntryPage = ({
     const [
         methodLookupIndex,
         setMethodLookupIndex,
-    ] = useState<number | null>(
-        null
-    );
+    ] = useState<
+        number | null
+    >(null);
 
 
     /* =====================================================
-       HOD REVIEW
+       ACCESS VALIDATION
     ===================================================== */
 
-    const isReviewed = (
-        row: ResultEntry
-    ): boolean => {
-        return (
-            normalizeHodReview(
-                row.hodReview
-            ) === "Y"
-        );
-    };
+    useEffect(() => {
+
+        const checkAccess =
+            async () => {
+
+                /*
+                 * Partial external link.
+                 */
+                if (
+                    hasAnyExternalArgument &&
+                    !hasCompleteExternalArguments
+                ) {
+
+                    navigate(
+                        "/login",
+                        {
+                            replace: true,
+                        }
+                    );
+
+                    return;
+                }
 
 
-    /* =====================================================
-       BACK
-    ===================================================== */
+                /*
+                 * Valid external link.
+                 */
+                if (
+                    hasCompleteExternalArguments
+                ) {
 
-    const handleBack = () => {
-        window.close();
+                    setIsAdmin(false);
+
+                    setAccessChecking(false);
+
+                    return;
+                }
 
 
-        setTimeout(() => {
-            if (!window.closed) {
-                window.history.back();
-            }
-        }, 150);
-    };
+                /*
+                 * No URL args.
+                 *
+                 * Must be admin.
+                 */
+                if (!adminToken) {
+
+                    navigate(
+                        "/login",
+                        {
+                            replace: true,
+                        }
+                    );
+
+                    return;
+                }
+
+
+                const valid =
+                    await validateAdminSession(
+                        adminToken
+                    );
+
+
+                if (!valid) {
+
+                    sessionStorage.removeItem(
+                        ADMIN_TOKEN_KEY
+                    );
+
+                    setAdminToken("");
+
+                    navigate(
+                        "/login",
+                        {
+                            replace: true,
+                        }
+                    );
+
+                    return;
+                }
+
+
+                setIsAdmin(true);
+
+                setAccessChecking(false);
+            };
+
+
+        void checkAccess();
+
+    }, [
+        adminToken,
+        hasAnyExternalArgument,
+        hasCompleteExternalArguments,
+        navigate,
+    ]);
 
 
     /* =====================================================
        LOAD
     ===================================================== */
 
-    const loadRegistration = async (
-        regValue?: string
-    ) => {
-        const regNo = (
-            regValue ||
-            registrationNo
-        ).trim();
+    const loadRegistration =
+        async (
+            value?: string
+        ) => {
+
+            const regNo =
+                (
+                    value ||
+                    registrationNo
+                ).trim();
 
 
-        if (!regNo) {
-            setError(
-                "Registration number is required."
-            );
+            if (!regNo) {
 
-            return;
-        }
-
-
-        try {
-            setLoading(true);
-
-            setError("");
-            setMessage("");
-
-            if (!labCodeFromUrl) {
                 setError(
-                    "Lab Code is missing. Unable to load registration."
+                    "Registration number is required."
                 );
 
                 return;
             }
 
 
-            const data =
-                await getResultsByRegistration(
-                    regNo,
-                    labCodeFromUrl
-                );
+            try {
+
+                setLoading(true);
+
+                setError("");
+
+                setMessage("");
 
 
-            const normalized:
-                ResultEntry[] =
-                data.map(
-                    (row) => ({
+                const data =
+                    await getResultsByRegistration(
+                        regNo,
 
-                        registrationNo:
-                            displayValue(
-                                row.registrationNo
-                            ),
+                        isAdmin
+                            ? undefined
+                            : labCodeFromUrl,
 
-                        testCode:
-                            displayValue(
-                                row.testCode
-                            ),
-
-                        methodCode:
-                            displayValue(
-                                row.methodCode
-                            ),
-
-                        method:
-                            displayValue(
-                                row.method
-                            ),
-
-                        unit:
-                            displayValue(
-                                row.unit
-                            ),
-
-                        instrument:
-                            displayValue(
-                                row.instrument
-                            ),
-
-                        loq:
-                            displayValue(
-                                row.loq
-                            ),
-
-                        result:
-                            displayValue(
-                                row.result
-                            ),
-
-                        nabl:
-                            normalizeNabl(
-                                row.nabl
-                            ),
-
-                        spec:
-                            displayValue(
-                                row.spec
-                            ),
-
-                        refMethod:
-                            displayValue(
-                                row.refMethod
-                            ),
-
-                        hodReview:
-                            normalizeHodReview(
-                                row.hodReview
-                            ),
-                    })
-                );
+                        isAdmin
+                            ? adminToken
+                            : undefined
+                    );
 
 
-            setRows(
-                normalized
-            );
+                const normalized =
+                    data.map(
+                        (row) => ({
+
+                            registrationNo:
+                                displayValue(
+                                    row.registrationNo
+                                ),
+
+                            testCode:
+                                displayValue(
+                                    row.testCode
+                                ),
+
+                            labCode:
+                                displayValue(
+                                    row.labCode
+                                ),
+
+                            methodCode:
+                                displayValue(
+                                    row.methodCode
+                                ),
+
+                            method:
+                                displayValue(
+                                    row.method
+                                ),
+
+                            unit:
+                                displayValue(
+                                    row.unit
+                                ),
+
+                            instrument:
+                                displayValue(
+                                    row.instrument
+                                ),
+
+                            loq:
+                                displayValue(
+                                    row.loq
+                                ),
+
+                            result:
+                                displayValue(
+                                    row.result
+                                ),
+
+                            nabl:
+                                normalizeNabl(
+                                    row.nabl
+                                ),
+
+                            spec:
+                                displayValue(
+                                    row.spec
+                                ),
+
+                            refMethod:
+                                displayValue(
+                                    row.refMethod
+                                ),
+
+                            hodReview:
+                                displayValue(
+                                    row.hodReview
+                                ),
+                        })
+                    );
 
 
-            setOriginalRows(
-                JSON.parse(
-                    JSON.stringify(
-                        normalized
+                setRows(normalized);
+
+
+                setOriginalRows(
+                    JSON.parse(
+                        JSON.stringify(
+                            normalized
+                        )
                     )
-                )
-            );
+                );
 
 
-            setRegistrationNo(
-                regNo
-            );
+                setRegistrationNo(
+                    regNo
+                );
 
-        }
-        catch (err: any) {
-            console.error(
-                "Load registration error:",
-                err
-            );
+            }
+            catch (err: any) {
 
+                setRows([]);
 
-            setRows([]);
-            setOriginalRows([]);
+                setOriginalRows([]);
 
 
-            setError(
-                err?.response
-                    ?.data
-                    ?.message ||
-                "Unable to load registration."
-            );
+                setError(
+                    err?.response
+                        ?.data
+                        ?.message ||
+                    "Unable to load registration."
+                );
 
-        }
-        finally {
-            setLoading(false);
-        }
-    };
+            }
+            finally {
+
+                setLoading(false);
+            }
+        };
 
 
-    /* =====================================================
-       AUTO LOAD
-    ===================================================== */
-
+    /*
+     * External user auto-load.
+     */
     useEffect(() => {
-        const incomingRegistrationNo =
-            registrationFromUrl ||
-            propRegistrationNo ||
-            "";
 
-
-        if (!incomingRegistrationNo) {
+        if (
+            accessChecking ||
+            isAdmin ||
+            !hasCompleteExternalArguments
+        ) {
             return;
         }
 
 
         setRegistrationNo(
-            incomingRegistrationNo
+            registrationFromUrl
         );
 
 
         void loadRegistration(
-            incomingRegistrationNo
+            registrationFromUrl
         );
 
     }, [
+        accessChecking,
+        isAdmin,
+        hasCompleteExternalArguments,
         registrationFromUrl,
-        propRegistrationNo,
     ]);
 
 
     /* =====================================================
-       COMMON CHANGE
+       CHANGE
     ===================================================== */
 
     const handleChange = (
@@ -1163,6 +1183,7 @@ const ResultEntryPage = ({
         field: keyof ResultEntry,
         value: string
     ) => {
+
         setRows(
             (previous) =>
                 previous.map(
@@ -1170,15 +1191,10 @@ const ResultEntryPage = ({
                         row,
                         rowIndex
                     ) => {
-                        if (
-                            rowIndex !== index
-                        ) {
-                            return row;
-                        }
-
 
                         if (
-                            isReviewed(row)
+                            rowIndex !== index ||
+                            isHodReviewed(row)
                         ) {
                             return row;
                         }
@@ -1197,265 +1213,152 @@ const ResultEntryPage = ({
 
 
     /* =====================================================
-       RESULT CHANGE
+       M CODE
     ===================================================== */
 
-    const handleResultChange = (
-        index: number,
-        html: string
-    ) => {
-        handleChange(
-            index,
-            "result",
-            html
-        );
-    };
+    const handleMethodCodeInput =
+        (
+            index: number,
+            value: string
+        ) => {
 
-
-    /* =====================================================
-       M CODE CHANGE
-    ===================================================== */
-
-    const handleMethodCodeInput = (
-        index: number,
-        value: string
-    ) => {
-        handleChange(
-            index,
-            "methodCode",
-            value
-        );
-
-
-        /*
-         * Remove old Method until
-         * new M Code is validated.
-         */
-        handleChange(
-            index,
-            "method",
-            "-"
-        );
-
-
-        setError("");
-        setMessage("");
-    };
-
-
-    /* =====================================================
-       M CODE → METHOD
-    ===================================================== */
-
-    const handleMethodCodeBlur = async (
-        index: number
-    ) => {
-        const row =
-            rows[index];
-
-
-        if (!row) {
-            return;
-        }
-
-
-        if (
-            isReviewed(row)
-        ) {
-            return;
-        }
-
-
-        const methodCode =
-            row.methodCode
-                ?.trim() || "";
-
-
-        if (
-            !methodCode ||
-            methodCode === "-"
-        ) {
             handleChange(
                 index,
                 "methodCode",
-                "-"
+                value
             );
 
 
+            /*
+             * '-' is valid.
+             */
+            if (
+                value.trim() === "-"
+            ) {
+
+                handleChange(
+                    index,
+                    "method",
+                    "-"
+                );
+
+                return;
+            }
+
+
+            /*
+             * Remove old Method.
+             */
             handleChange(
                 index,
                 "method",
                 "-"
             );
-
-            return;
-        }
+        };
 
 
-        try {
-            setMethodLookupIndex(
-                index
-            );
+    const handleMethodCodeBlur =
+        async (
+            index: number
+        ) => {
+
+            const row =
+                rows[index];
 
 
-            setError("");
+            if (
+                !row ||
+                isHodReviewed(row)
+            ) {
+                return;
+            }
 
 
-            const methodName =
-                await getMethodByCode(
-                    methodCode
+            const code =
+                row.methodCode
+                    .trim();
+
+
+            if (
+                !code ||
+                code === "-"
+            ) {
+
+                handleChange(
+                    index,
+                    "methodCode",
+                    "-"
+                );
+
+                handleChange(
+                    index,
+                    "method",
+                    "-"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                setMethodLookupIndex(
+                    index
                 );
 
 
-            setRows(
-                (previous) =>
-                    previous.map(
-                        (
-                            currentRow,
-                            rowIndex
-                        ) => {
-                            if (
-                                rowIndex !== index
-                            ) {
-                                return currentRow;
-                            }
+                const method =
+                    await getMethodByCode(
+                        code
+                    );
 
 
-                            if (
-                                isReviewed(
-                                    currentRow
-                                )
-                            ) {
-                                return currentRow;
-                            }
+                handleChange(
+                    index,
+                    "method",
+                    method || "-"
+                );
+
+                setError("");
+
+            }
+            catch (err: any) {
+
+                handleChange(
+                    index,
+                    "method",
+                    "-"
+                );
 
 
-                            if (
-                                currentRow
-                                    .methodCode
-                                    .trim() !==
-                                methodCode
-                            ) {
-                                return currentRow;
-                            }
+                setError(
+                    err?.response
+                        ?.data
+                        ?.message ||
+                    `No Method found for M Code: ${code}`
+                );
 
+            }
+            finally {
 
-                            return {
-                                ...currentRow,
-
-                                method:
-                                    methodName?.trim() ||
-                                    "-",
-                            };
-                        }
-                    )
-            );
-
-        }
-        catch (err: any) {
-            console.error(
-                "Method lookup failed:",
-                err
-            );
-
-
-            setRows(
-                (previous) =>
-                    previous.map(
-                        (
-                            currentRow,
-                            rowIndex
-                        ) => {
-                            if (
-                                rowIndex !== index
-                            ) {
-                                return currentRow;
-                            }
-
-
-                            return {
-                                ...currentRow,
-
-                                method: "-",
-                            };
-                        }
-                    )
-            );
-
-
-            setError(
-                err?.response
-                    ?.data
-                    ?.message ||
-                `No Method found for M Code: ${methodCode}`
-            );
-
-        }
-        finally {
-            setMethodLookupIndex(
-                null
-            );
-        }
-    };
+                setMethodLookupIndex(
+                    null
+                );
+            }
+        };
 
 
     /* =====================================================
-       METHOD → M CODE
-    ===================================================== */
-
-    const handleMethodSelect = (
-        index: number,
-        selected: MethodSuggestion
-    ) => {
-        handleChange(
-            index,
-            "method",
-            selected.method
-        );
-
-
-        handleChange(
-            index,
-            "methodCode",
-            selected.code
-        );
-
-
-        setError("");
-        setMessage("");
-    };
-
-
-    /* =====================================================
-       SPEC SELECT
-    ===================================================== */
-
-    const handleSpecificationSelect = (
-        index: number,
-        selected: SpecificationSuggestion
-    ) => {
-        handleChange(
-            index,
-            "spec",
-            selected.specName
-        );
-
-
-        setError("");
-        setMessage("");
-    };
-
-
-    /* =====================================================
-       MODIFIED CHECK
+       MODIFIED
     ===================================================== */
 
     const isModified = (
         row: ResultEntry,
         index: number
-    ): boolean => {
+    ) => {
+
         if (
-            isReviewed(row)
+            isHodReviewed(row)
         ) {
             return false;
         }
@@ -1501,35 +1404,30 @@ const ResultEntryPage = ({
     };
 
 
-    /* =====================================================
-       MODIFIED COUNT
-    ===================================================== */
-
     const modifiedRowsCount =
-        useMemo(() => {
+        useMemo(
+            () =>
+                rows.filter(
+                    (row, index) =>
+                        isModified(
+                            row,
+                            index
+                        )
+                ).length,
 
-            return rows.filter(
-                (
-                    row,
-                    index
-                ) =>
-                    isModified(
-                        row,
-                        index
-                    )
-            ).length;
-
-        }, [
-            rows,
-            originalRows,
-        ]);
+            [
+                rows,
+                originalRows,
+            ]
+        );
 
 
     /* =====================================================
        CANCEL
     ===================================================== */
 
-    const handleCancelChanges = () => {
+    const handleCancel = () => {
+
         if (
             modifiedRowsCount === 0
         ) {
@@ -1537,169 +1435,30 @@ const ResultEntryPage = ({
         }
 
 
-        const confirmed =
-            window.confirm(
-                "Are you sure you want to cancel all unsaved changes?"
-            );
-
-
-        if (!confirmed) {
+        if (
+            !window.confirm(
+                "Cancel all unsaved changes?"
+            )
+        ) {
             return;
         }
 
 
-        const restoredRows:
-            ResultEntry[] =
+        setRows(
             JSON.parse(
                 JSON.stringify(
                     originalRows
                 )
-            );
-
-
-        setRows(
-            restoredRows
+            )
         );
-
-
-        setError("");
 
 
         setMessage(
             "Unsaved changes have been cancelled."
         );
-    };
 
 
-    /* =====================================================
-       SAVE CHANGED ROWS
-    ===================================================== */
-
-    const saveChangedRows = async (
-        changedRows: ResultEntry[]
-    ) => {
-        if (!userIdFromUrl) {
-            setError(
-                "User ID is missing. Unable to save changes."
-            );
-
-            return;
-        }
-
-
-        const editableRows =
-            changedRows.filter(
-                (row) =>
-                    !isReviewed(row)
-            );
-
-
-        if (
-            editableRows.length === 0
-        ) {
-            setError(
-                "No editable rows are available to save."
-            );
-
-            return;
-        }
-
-
-        try {
-            setSaving(true);
-
-            setError("");
-            setMessage("");
-
-
-            await updateResults(
-                registrationNo,
-                userIdFromUrl,
-                labCodeFromUrl,
-
-                editableRows.map(
-                    (row) => ({
-
-                        testCode:
-                            row.testCode,
-
-                        methodCode:
-                            saveValue(
-                                row.methodCode
-                            ),
-
-                        method:
-                            saveValue(
-                                row.method
-                            ),
-
-                        unit:
-                            saveValue(
-                                row.unit
-                            ),
-
-                        instrument:
-                            saveValue(
-                                row.instrument
-                            ),
-
-                        loq:
-                            saveValue(
-                                row.loq
-                            ),
-
-                        result:
-                            saveValue(
-                                row.result
-                            ),
-
-                        nabl:
-                            normalizeNabl(
-                                row.nabl
-                            ),
-
-                        spec:
-                            saveValue(
-                                row.spec
-                            ),
-
-                        refMethod:
-                            saveValue(
-                                row.refMethod
-                            ),
-                    })
-                )
-            );
-
-
-            await loadRegistration(
-                registrationNo
-            );
-
-
-            setMessage(
-                "Changes saved successfully."
-            );
-
-        }
-        catch (err: any) {
-            console.error(
-                "Save result error:",
-                err
-            );
-
-
-            setError(
-                err?.response
-                    ?.data
-                    ?.message ||
-                "Unable to save changes. Please try again."
-            );
-
-        }
-        finally {
-            setSaving(false);
-        }
+        setError("");
     };
 
 
@@ -1707,133 +1466,293 @@ const ResultEntryPage = ({
        SAVE
     ===================================================== */
 
-    const handleSave = async () => {
-        if (!labCodeFromUrl) {
-            setError(
-                "Lab Code is missing. Unable to save changes."
-            );
+    const handleSave =
+        async () => {
 
-            return;
-        }
-        if (!userIdFromUrl) {
-            setError(
-                "User ID is missing. Unable to save changes."
-            );
+            if (
+                methodLookupIndex !== null
+            ) {
 
-            return;
-        }
-
-
-        if (
-            methodLookupIndex !== null
-        ) {
-            setError(
-                "Please wait for Method lookup to complete."
-            );
-
-            return;
-        }
-
-
-        if (
-            document.activeElement
-            instanceof HTMLElement
-        ) {
-            document
-                .activeElement
-                .blur();
-        }
-
-
-        await new Promise<void>(
-            (resolve) => {
-                setTimeout(
-                    resolve,
-                    0
+                setError(
+                    "Please wait for Method lookup to complete."
                 );
+
+                return;
             }
-        );
 
 
-        const changedRows =
-            rows.filter(
-                (
-                    row,
-                    index
-                ) =>
-                    isModified(
-                        row,
-                        index
+            if (
+                document.activeElement
+                instanceof HTMLElement
+            ) {
+
+                document
+                    .activeElement
+                    .blur();
+            }
+
+
+            await new Promise<void>(
+                (resolve) =>
+                    setTimeout(
+                        resolve,
+                        0
                     )
             );
 
 
+            const changedRows =
+                rows.filter(
+                    (row, index) =>
+                        isModified(
+                            row,
+                            index
+                        )
+                );
+
+
+            if (
+                changedRows.length === 0
+            ) {
+
+                setMessage(
+                    "No changes to save."
+                );
+
+                return;
+            }
+
+
+            /*
+             * This is valid:
+             *
+             * M Code = -
+             * Method = -
+             */
+            const invalidMethod =
+                changedRows.find(
+                    (row) =>
+                        (
+                            row.methodCode
+                                .trim() === "-"
+                        ) !==
+                        (
+                            row.method
+                                .trim() === "-"
+                        )
+                );
+
+
+            if (invalidMethod) {
+
+                setError(
+                    `M Code and Method must match for Test Code ${invalidMethod.testCode}.`
+                );
+
+                return;
+            }
+
+
+            if (
+                !window.confirm(
+                    `Save ${changedRows.length} changed row(s)?`
+                )
+            ) {
+                return;
+            }
+
+
+            try {
+
+                setSaving(true);
+
+                setError("");
+
+                setMessage("");
+
+
+                await updateResults(
+                    registrationNo,
+
+                    isAdmin
+                        ? "admin"
+                        : userIdFromUrl,
+
+                    isAdmin
+                        ? ""
+                        : labCodeFromUrl,
+
+                    changedRows.map(
+                        (row) => ({
+
+                            testCode:
+                                row.testCode,
+
+                            /*
+                             * Important for admin.
+                             */
+                            labCode:
+                                row.labCode,
+
+                            methodCode:
+                                saveValue(
+                                    row.methodCode
+                                ),
+
+                            method:
+                                saveValue(
+                                    row.method
+                                ),
+
+                            unit:
+                                saveValue(
+                                    row.unit
+                                ),
+
+                            instrument:
+                                saveValue(
+                                    row.instrument
+                                ),
+
+                            loq:
+                                saveValue(
+                                    row.loq
+                                ),
+
+                            result:
+                                saveValue(
+                                    row.result
+                                ),
+
+                            nabl:
+                                normalizeNabl(
+                                    row.nabl
+                                ),
+
+                            spec:
+                                saveValue(
+                                    row.spec
+                                ),
+
+                            refMethod:
+                                saveValue(
+                                    row.refMethod
+                                ),
+                        })
+                    ),
+
+                    isAdmin
+                        ? adminToken
+                        : undefined
+                );
+
+
+                await loadRegistration(
+                    registrationNo
+                );
+
+
+                setMessage(
+                    "Changes saved successfully."
+                );
+
+            }
+            catch (err: any) {
+
+                setError(
+                    err?.response
+                        ?.data
+                        ?.message ||
+                    "Unable to save changes."
+                );
+
+            }
+            finally {
+
+                setSaving(false);
+            }
+        };
+
+    const handleLogout = async () => {
+
         if (
-            changedRows.length === 0
+            !window.confirm(
+                "Are you sure you want to logout?"
+            )
         ) {
-            setMessage(
-                "No changes to save."
-            );
-
             return;
         }
 
+        try {
 
-        /*
-         * M Code must have matching Method.
-         */
-        const invalidMethodRow =
-            changedRows.find(
-                (row) =>
-                    row.methodCode.trim() !== "-" &&
-                    row.method.trim() === "-"
-            );
+            if (adminToken) {
+                await adminLogout(adminToken);
+            }
 
-
-        if (invalidMethodRow) {
-            setError(
-                `Please select or enter a valid Method for Test Code ${invalidMethodRow.testCode}.`
-            );
-
-            return;
         }
+        catch (error) {
 
-
-        const confirmed =
-            window.confirm(
-                `You have modified ${changedRows.length} row(s).\n\nDo you want to save these changes?`
+            console.error(
+                "Admin logout request failed:",
+                error
             );
 
-
-        if (!confirmed) {
-            return;
         }
+        finally {
 
+            sessionStorage.removeItem(
+                ADMIN_TOKEN_KEY
+            );
 
-        await saveChangedRows(
-            changedRows
-        );
+            setAdminToken("");
+
+            setIsAdmin(false);
+
+            navigate(
+                "/login",
+                {
+                    replace: true,
+                }
+            );
+        }
     };
 
 
     /* =====================================================
-       MANUAL LOAD
+       BACK
     ===================================================== */
 
-    const showManualRegistrationLoader =
-        !registrationFromUrl &&
-        !propRegistrationNo;
+    const handleBack = () => {
+
+        window.close();
 
 
-    /* =====================================================
-       UI
-    ===================================================== */
+        window.setTimeout(
+            () => {
+
+                if (!window.closed) {
+
+                    window.history.back();
+                }
+
+            },
+            150
+        );
+    };
+
+
+    if (accessChecking) {
+
+        return (
+            <div className="loading-message">
+                Checking access...
+            </div>
+        );
+    }
+
 
     return (
         <div className="result-entry-page">
-
-
-            {/* HEADER */}
 
             <header className="efrac-banner">
 
@@ -1845,18 +1764,34 @@ const ResultEntryPage = ({
             </header>
 
 
-            {/* BACK */}
-
             <div className="top-action-bar">
+
+                {isAdmin && (
+
+                    <span className="admin-mode-label">
+                        Admin Mode
+                    </span>
+
+                )}
+
+                {isAdmin && (
+
+                    <button
+                        type="button"
+                        className="logout-button"
+                        onClick={() =>
+                            void handleLogout()
+                        }
+                    >
+                        Logout
+                    </button>
+
+                )}
 
                 <button
                     type="button"
-
                     className="back-button"
-
-                    onClick={
-                        handleBack
-                    }
+                    onClick={handleBack}
                 >
                     Back
                 </button>
@@ -1864,9 +1799,9 @@ const ResultEntryPage = ({
             </div>
 
 
-            {/* MANUAL REGISTRATION */}
+            {/* ADMIN MANUAL SEARCH */}
 
-            {showManualRegistrationLoader && (
+            {isAdmin && (
 
                 <div className="registration-loader">
 
@@ -1877,44 +1812,35 @@ const ResultEntryPage = ({
 
                     <input
                         type="text"
-
-                        value={
-                            registrationNo
-                        }
-
+                        value={registrationNo}
                         onChange={(e) =>
                             setRegistrationNo(
                                 e.target.value
                             )
                         }
-
                         onKeyDown={(e) => {
+
                             if (
                                 e.key ===
                                 "Enter"
                             ) {
                                 void loadRegistration();
                             }
+
                         }}
                     />
 
 
                     <button
                         type="button"
-
+                        disabled={loading}
                         onClick={() =>
                             void loadRegistration()
                         }
-
-                        disabled={
-                            loading
-                        }
                     >
-
                         {loading
                             ? "Loading..."
                             : "Load"}
-
                     </button>
 
                 </div>
@@ -1922,47 +1848,33 @@ const ResultEntryPage = ({
             )}
 
 
-            {/* LOADING */}
-
             {loading && (
 
                 <div className="loading-message">
-
                     Loading registration data...
-
                 </div>
 
             )}
 
-
-            {/* ERROR */}
 
             {error && (
 
                 <div className="error-message">
-
                     {error}
-
                 </div>
 
             )}
 
-
-            {/* SUCCESS */}
 
             {!loading &&
                 message && (
 
                     <div className="success-message">
-
                         {message}
-
                     </div>
 
                 )}
 
-
-            {/* TABLE */}
 
             {rows.length > 0 && (
 
@@ -1975,51 +1887,17 @@ const ResultEntryPage = ({
                             <thead>
 
                                 <tr>
-
-                                    <th>
-                                        Sample ID
-                                    </th>
-
-                                    <th>
-                                        Test Code
-                                    </th>
-
-                                    <th>
-                                        M Code
-                                    </th>
-
-                                    <th>
-                                        Method
-                                    </th>
-
-                                    <th>
-                                        Unit
-                                    </th>
-
-                                    <th>
-                                        Instrument
-                                    </th>
-
-                                    <th>
-                                        LOQ
-                                    </th>
-
-                                    <th>
-                                        Result
-                                    </th>
-
-                                    <th>
-                                        NABL
-                                    </th>
-
-                                    <th>
-                                        Spec
-                                    </th>
-
-                                    <th>
-                                        Ref Method
-                                    </th>
-
+                                    <th>Sample ID</th>
+                                    <th>Test Code</th>
+                                    <th>M Code</th>
+                                    <th>Method</th>
+                                    <th>Unit</th>
+                                    <th>Instrument</th>
+                                    <th>LOQ</th>
+                                    <th>Result</th>
+                                    <th>NABL</th>
+                                    <th>Spec</th>
+                                    <th>Ref Method</th>
                                 </tr>
 
                             </thead>
@@ -2034,19 +1912,12 @@ const ResultEntryPage = ({
                                     ) => {
 
                                         const reviewed =
-                                            isReviewed(
+                                            isHodReviewed(
                                                 row
                                             );
 
 
-                                        const modified =
-                                            isModified(
-                                                row,
-                                                index
-                                            );
-
-
-                                        const lookingUpMethod =
+                                        const lookingMethod =
                                             methodLookupIndex ===
                                             index;
 
@@ -2055,54 +1926,30 @@ const ResultEntryPage = ({
 
                                             <tr
                                                 key={
-                                                    `${row.registrationNo}-${row.testCode}-${index}`
+                                                    `${row.registrationNo}-${row.labCode}-${row.testCode}-${index}`
                                                 }
 
                                                 className={
                                                     reviewed
                                                         ? "reviewed-row"
-                                                        : modified
+                                                        : isModified(
+                                                            row,
+                                                            index
+                                                        )
                                                             ? "modified-row"
                                                             : ""
                                                 }
-
-                                                title={
-                                                    reviewed
-                                                        ? "HOD review completed. Editing is locked."
-                                                        : ""
-                                                }
                                             >
 
-
-                                                {/* SAMPLE ID */}
-
-                                                <td
-                                                    className="
-                                                        readonly-cell
-                                                        sample-id-cell
-                                                    "
-                                                >
-                                                    {
-                                                        row.registrationNo
-                                                    }
+                                                <td className="readonly-cell sample-id-cell">
+                                                    {row.registrationNo}
                                                 </td>
 
 
-                                                {/* TEST CODE */}
-
-                                                <td
-                                                    className="
-                                                        readonly-cell
-                                                        test-code-cell
-                                                    "
-                                                >
-                                                    {
-                                                        row.testCode
-                                                    }
+                                                <td className="readonly-cell test-code-cell">
+                                                    {row.testCode}
                                                 </td>
 
-
-                                                {/* M CODE */}
 
                                                 <td>
 
@@ -2115,7 +1962,7 @@ const ResultEntryPage = ({
 
                                                         disabled={
                                                             reviewed ||
-                                                            lookingUpMethod
+                                                            lookingMethod
                                                         }
 
                                                         onChange={(e) =>
@@ -2130,91 +1977,79 @@ const ResultEntryPage = ({
                                                                 index
                                                             )
                                                         }
-
-                                                        title={
-                                                            reviewed
-                                                                ? "HOD review completed. Editing is locked."
-                                                                : "Enter M Code. Method will be filled automatically."
-                                                        }
                                                     />
 
                                                 </td>
 
 
-                                                {/* METHOD SEARCH */}
-
                                                 <td>
 
-                                                    {lookingUpMethod ? (
+                                                    {lookingMethod
+                                                        ? (
 
-                                                        <input
-                                                            type="text"
+                                                            <input
+                                                                type="text"
+                                                                value="Loading..."
+                                                                readOnly
+                                                                className="auto-filled-input"
+                                                            />
 
-                                                            value="Loading..."
+                                                        )
+                                                        : (
 
-                                                            readOnly
+                                                            <MethodSearchBox
+                                                                value={
+                                                                    row.method
+                                                                }
 
-                                                            className="auto-filled-input"
-                                                        />
+                                                                disabled={
+                                                                    reviewed
+                                                                }
 
-                                                    ) : (
+                                                                onManualDash={() => {
 
-                                                        <MethodSearchBox
-                                                            value={
-                                                                row.method
-                                                            }
+                                                                    handleChange(
+                                                                        index,
+                                                                        "method",
+                                                                        "-"
+                                                                    );
 
-                                                            disabled={
-                                                                reviewed
-                                                            }
+                                                                    handleChange(
+                                                                        index,
+                                                                        "methodCode",
+                                                                        "-"
+                                                                    );
+                                                                }}
 
-                                                            onSelect={(
-                                                                selected
-                                                            ) =>
-                                                                handleMethodSelect(
-                                                                    index,
-                                                                    selected
-                                                                )
-                                                            }
+                                                                onSelect={(selected) => {
 
-                                                            onManualDash={() => {
-                                                                handleChange(
-                                                                    index,
-                                                                    "method",
-                                                                    "-"
-                                                                );
+                                                                    handleChange(
+                                                                        index,
+                                                                        "method",
+                                                                        selected.method
+                                                                    );
 
-                                                                handleChange(
-                                                                    index,
-                                                                    "methodCode",
-                                                                    "-"
-                                                                );
+                                                                    handleChange(
+                                                                        index,
+                                                                        "methodCode",
+                                                                        selected.code
+                                                                    );
 
-                                                                setError("");
-                                                                setMessage("");
-                                                            }}
-                                                        />
+                                                                    setError("");
+                                                                }}
+                                                            />
 
-                                                    )}
+                                                        )}
 
                                                 </td>
 
-
-                                                {/* UNIT */}
 
                                                 <td>
 
                                                     <input
                                                         type="text"
-
-                                                        value={
-                                                            row.unit
-                                                        }
-
-                                                        disabled={
-                                                            reviewed
-                                                        }
-
+                                                        value={row.unit}
+                                                        disabled={reviewed}
                                                         onChange={(e) =>
                                                             handleChange(
                                                                 index,
@@ -2227,21 +2062,12 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* INSTRUMENT */}
-
                                                 <td>
 
                                                     <input
                                                         type="text"
-
-                                                        value={
-                                                            row.instrument
-                                                        }
-
-                                                        disabled={
-                                                            reviewed
-                                                        }
-
+                                                        value={row.instrument}
+                                                        disabled={reviewed}
                                                         onChange={(e) =>
                                                             handleChange(
                                                                 index,
@@ -2254,21 +2080,12 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* LOQ */}
-
                                                 <td>
 
                                                     <input
                                                         type="text"
-
-                                                        value={
-                                                            row.loq
-                                                        }
-
-                                                        disabled={
-                                                            reviewed
-                                                        }
-
+                                                        value={row.loq}
+                                                        disabled={reviewed}
                                                         onChange={(e) =>
                                                             handleChange(
                                                                 index,
@@ -2281,22 +2098,15 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* RESULT */}
-
                                                 <td className="result-cell">
 
                                                     <ResultHtmlEditor
-                                                        html={
-                                                            row.result
-                                                        }
-
-                                                        disabled={
-                                                            reviewed
-                                                        }
-
+                                                        html={row.result}
+                                                        disabled={reviewed}
                                                         onChange={(html) =>
-                                                            handleResultChange(
+                                                            handleChange(
                                                                 index,
+                                                                "result",
                                                                 html
                                                             )
                                                         }
@@ -2304,8 +2114,6 @@ const ResultEntryPage = ({
 
                                                 </td>
 
-
-                                                {/* NABL */}
 
                                                 <td>
 
@@ -2316,9 +2124,7 @@ const ResultEntryPage = ({
                                                             )
                                                         }
 
-                                                        disabled={
-                                                            reviewed
-                                                        }
+                                                        disabled={reviewed}
 
                                                         onChange={(e) =>
                                                             handleChange(
@@ -2342,47 +2148,36 @@ const ResultEntryPage = ({
                                                 </td>
 
 
-                                                {/* SPEC SEARCH */}
-
                                                 <td>
 
                                                     <SpecificationSearchBox
-                                                        value={
-                                                            row.spec
-                                                        }
+                                                        value={row.spec}
 
                                                         disabled={
                                                             reviewed
                                                         }
 
-                                                        onSelect={(
-                                                            selected
-                                                        ) =>
-                                                            handleSpecificationSelect(
+                                                        onSelect={(selected) => {
+
+                                                            handleChange(
                                                                 index,
-                                                                selected
-                                                            )
-                                                        }
+                                                                "spec",
+                                                                selected.specName
+                                                            );
+
+                                                            setError("");
+                                                        }}
                                                     />
 
                                                 </td>
 
 
-                                                {/* REF METHOD */}
-
                                                 <td>
 
                                                     <input
                                                         type="text"
-
-                                                        value={
-                                                            row.refMethod
-                                                        }
-
-                                                        disabled={
-                                                            reviewed
-                                                        }
-
+                                                        value={row.refMethod}
+                                                        disabled={reviewed}
                                                         onChange={(e) =>
                                                             handleChange(
                                                                 index,
@@ -2407,8 +2202,6 @@ const ResultEntryPage = ({
                     </div>
 
 
-                    {/* ACTION AREA */}
-
                     <div className="save-area">
 
                         <div className="change-info">
@@ -2422,47 +2215,34 @@ const ResultEntryPage = ({
 
                         <button
                             type="button"
-
                             className="cancel-button"
-
-                            onClick={
-                                handleCancelChanges
-                            }
-
                             disabled={
                                 saving ||
-                                methodLookupIndex !== null ||
                                 modifiedRowsCount === 0
                             }
+                            onClick={
+                                handleCancel
+                            }
                         >
-
                             Cancel Changes
-
                         </button>
 
 
                         <button
                             type="button"
-
                             className="save-button"
-
-                            onClick={() =>
-                                void handleSave()
-                            }
-
                             disabled={
                                 saving ||
                                 methodLookupIndex !== null ||
                                 modifiedRowsCount === 0
                             }
+                            onClick={() =>
+                                void handleSave()
+                            }
                         >
-
                             {saving
                                 ? "Saving..."
-                                : methodLookupIndex !== null
-                                    ? "Checking Method..."
-                                    : "Save Changes"}
-
+                                : "Save Changes"}
                         </button>
 
                     </div>

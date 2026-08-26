@@ -11,9 +11,16 @@ namespace ResultEntryApi.Repositories
             );
 
 
+        Task<List<ResultEntryDto>>
+            GetByRegistrationForAdminAsync(
+                string registrationNo
+            );
+
+
         Task<bool>
             UpdateResultsAsync(
-                UpdateResultRequest request
+                UpdateResultRequest request,
+                bool isAdmin
             );
 
 

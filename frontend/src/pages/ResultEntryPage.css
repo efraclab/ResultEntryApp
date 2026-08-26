@@ -1277,3 +1277,38 @@ button:disabled {
         margin-bottom: 5px;
     }
 }
+
+.admin-mode-label {
+    margin-right: auto;
+
+    padding: 6px 10px;
+
+    border-radius: 4px;
+
+    background: #eaf3ff;
+
+    color: #155fae;
+
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.logout-button {
+    padding: 7px 16px;
+
+    border: 1px solid #c93b3b;
+    border-radius: 4px;
+
+    background: #ffffff;
+    color: #c12f2f;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background: #c93b3b;
+    color: #ffffff;
+}

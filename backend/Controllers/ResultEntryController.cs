@@ -9,20 +9,28 @@ namespace ResultEntryApi.Controllers
     public class ResultEntryController
         : ControllerBase
     {
-        private readonly IResultEntryService _service;
+        private readonly
+            IResultEntryService
+                _service;
+
+
+        private readonly
+            AdminAuthService
+                _adminAuth;
 
 
         public ResultEntryController(
-            IResultEntryService service
+            IResultEntryService service,
+            AdminAuthService adminAuth
         )
         {
-            _service = service;
+            _service =
+                service;
+
+            _adminAuth =
+                adminAuth;
         }
 
-
-        // =====================================================
-        // GET REGISTRATION
-        // =====================================================
 
         [HttpGet]
         public async Task<IActionResult>
@@ -31,21 +39,57 @@ namespace ResultEntryApi.Controllers
                 string registrationNo,
 
                 [FromQuery]
-                string labCode
+                string? labCode = null
             )
         {
             try
             {
-                var results =
-                    await _service
-                        .GetByRegistrationAsync(
-                            registrationNo,
+                var isAdmin =
+                    IsAdmin();
+
+
+                List<ResultEntryDto>
+                    results;
+
+
+                if (isAdmin)
+                {
+                    results =
+                        await _service
+                            .GetByRegistrationForAdminAsync(
+                                registrationNo
+                            );
+                }
+                else
+                {
+                    if (
+                        string.IsNullOrWhiteSpace(
                             labCode
+                        )
+                    )
+                    {
+                        return Unauthorized(
+                            new
+                            {
+                                success = false,
+
+                                message =
+                                    "Lab Code is required."
+                            }
                         );
+                    }
+
+
+                    results =
+                        await _service
+                            .GetByRegistrationAsync(
+                                registrationNo,
+                                labCode
+                            );
+                }
 
 
                 if (
-                    results == null ||
                     results.Count == 0
                 )
                 {
@@ -55,7 +99,7 @@ namespace ResultEntryApi.Controllers
                             success = false,
 
                             message =
-                                "No records found for this registration number and lab."
+                                "No records found."
                         }
                     );
                 }
@@ -67,8 +111,6 @@ namespace ResultEntryApi.Controllers
                         success = true,
 
                         registrationNo,
-
-                        labCode,
 
                         totalRows =
                             results.Count,
@@ -96,7 +138,6 @@ namespace ResultEntryApi.Controllers
             {
                 return StatusCode(
                     500,
-
                     new
                     {
                         success = false,
@@ -112,10 +153,6 @@ namespace ResultEntryApi.Controllers
         }
 
 
-        // =====================================================
-        // UPDATE
-        // =====================================================
-
         [HttpPut]
         public async Task<IActionResult>
             UpdateResults(
@@ -127,7 +164,8 @@ namespace ResultEntryApi.Controllers
             {
                 await _service
                     .UpdateResultsAsync(
-                        request
+                        request,
+                        IsAdmin()
                     );
 
 
@@ -159,13 +197,12 @@ namespace ResultEntryApi.Controllers
             {
                 return StatusCode(
                     500,
-
                     new
                     {
                         success = false,
 
                         message =
-                            "An error occurred while updating result data.",
+                            "Unable to update results.",
 
                         error =
                             ex.Message
@@ -175,93 +212,50 @@ namespace ResultEntryApi.Controllers
         }
 
 
-        // =====================================================
-        // M CODE -> METHOD
-        // =====================================================
-
         [HttpGet("method")]
         public async Task<IActionResult>
-            GetMethodByCode(
+            GetMethod(
                 [FromQuery]
                 string methodCode
             )
         {
-            try
-            {
-                var methodName =
-                    await _service
-                        .GetMethodNameByCodeAsync(
-                            methodCode
-                        );
-
-
-                if (
-                    string.IsNullOrWhiteSpace(
-                        methodName
-                    )
-                )
-                {
-                    return NotFound(
-                        new
-                        {
-                            success = false,
-
-                            message =
-                                "No method found for this M Code."
-                        }
+            var method =
+                await _service
+                    .GetMethodNameByCodeAsync(
+                        methodCode
                     );
-                }
 
 
-                return Ok(
-                    new
-                    {
-                        success = true,
-
-                        methodCode,
-
-                        method =
-                            methodName
-                    }
-                );
-            }
-            catch (
-                ArgumentException ex
+            if (
+                string.IsNullOrWhiteSpace(
+                    method
+                )
             )
             {
-                return BadRequest(
+                return NotFound(
                     new
                     {
                         success = false,
 
                         message =
-                            ex.Message
+                            "No method found for this M Code."
                     }
                 );
             }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    500,
 
-                    new
-                    {
-                        success = false,
 
-                        message =
-                            "Unable to fetch method.",
+            return Ok(
+                new
+                {
+                    success = true,
 
-                        error =
-                            ex.Message
-                    }
-                );
-            }
+                    methodCode,
+
+                    method
+                }
+            );
         }
 
-
-        // =====================================================
-        // SEARCH METHODS
-        // =====================================================
 
         [HttpGet("methods/search")]
         public async Task<IActionResult>
@@ -270,48 +264,20 @@ namespace ResultEntryApi.Controllers
                 string search
             )
         {
-            try
-            {
-                var methods =
-                    await _service
-                        .SearchMethodsAsync(
-                            search
-                        );
+            return Ok(
+                new
+                {
+                    success = true,
 
-
-                return Ok(
-                    new
-                    {
-                        success = true,
-
-                        data =
-                            methods
-                    }
-                );
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    500,
-
-                    new
-                    {
-                        success = false,
-
-                        message =
-                            "Unable to search methods.",
-
-                        error =
-                            ex.Message
-                    }
-                );
-            }
+                    data =
+                        await _service
+                            .SearchMethodsAsync(
+                                search
+                            )
+                }
+            );
         }
 
-
-        // =====================================================
-        // SEARCH SPECIFICATIONS
-        // =====================================================
 
         [HttpGet(
             "specifications/search"
@@ -322,42 +288,56 @@ namespace ResultEntryApi.Controllers
                 string search
             )
         {
-            try
+            return Ok(
+                new
+                {
+                    success = true,
+
+                    data =
+                        await _service
+                            .SearchSpecificationsAsync(
+                                search
+                            )
+                }
+            );
+        }
+
+
+        private bool IsAdmin()
+        {
+            var auth =
+                Request.Headers
+                    .Authorization
+                    .ToString();
+
+
+            const string prefix =
+                "Bearer ";
+
+
+            if (
+                !auth.StartsWith(
+                    prefix,
+                    StringComparison
+                        .OrdinalIgnoreCase
+                )
+            )
             {
-                var specifications =
-                    await _service
-                        .SearchSpecificationsAsync(
-                            search
-                        );
-
-
-                return Ok(
-                    new
-                    {
-                        success = true,
-
-                        data =
-                            specifications
-                    }
-                );
+                return false;
             }
-            catch (Exception ex)
-            {
-                return StatusCode(
-                    500,
 
-                    new
-                    {
-                        success = false,
 
-                        message =
-                            "Unable to search specifications.",
+            var token =
+                auth[
+                    prefix.Length..
+                ]
+                .Trim();
 
-                        error =
-                            ex.Message
-                    }
+
+            return _adminAuth
+                .IsValidToken(
+                    token
                 );
-            }
         }
     }
 }

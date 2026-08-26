@@ -6,20 +6,19 @@ namespace ResultEntryApi.Services
     public class ResultEntryService
         : IResultEntryService
     {
-        private readonly IResultEntryRepository _repository;
+        private readonly
+            IResultEntryRepository
+                _repository;
 
 
         public ResultEntryService(
             IResultEntryRepository repository
         )
         {
-            _repository = repository;
+            _repository =
+                repository;
         }
 
-
-        // =====================================================
-        // GET REGISTRATION BY LAB
-        // =====================================================
 
         public async Task<List<ResultEntryDto>>
             GetByRegistrationAsync(
@@ -59,18 +58,37 @@ namespace ResultEntryApi.Services
         }
 
 
-        // =====================================================
-        // UPDATE
-        // =====================================================
-
-        public async Task<bool>
-            UpdateResultsAsync(
-                UpdateResultRequest request
+        public async Task<List<ResultEntryDto>>
+            GetByRegistrationForAdminAsync(
+                string registrationNo
             )
         {
             if (
-                request == null
+                string.IsNullOrWhiteSpace(
+                    registrationNo
+                )
             )
+            {
+                throw new ArgumentException(
+                    "Registration number is required."
+                );
+            }
+
+
+            return await _repository
+                .GetByRegistrationForAdminAsync(
+                    registrationNo.Trim()
+                );
+        }
+
+
+        public async Task<bool>
+            UpdateResultsAsync(
+                UpdateResultRequest request,
+                bool isAdmin
+            )
+        {
+            if (request == null)
             {
                 throw new ArgumentNullException(
                     nameof(request)
@@ -90,27 +108,39 @@ namespace ResultEntryApi.Services
             }
 
 
-            if (
-                string.IsNullOrWhiteSpace(
-                    request.UserId
-                )
-            )
+            if (isAdmin)
             {
-                throw new ArgumentException(
-                    "User ID is required for saving changes."
-                );
+                /*
+                 * Never trust frontend's
+                 * admin username.
+                 */
+                request.UserId =
+                    "admin";
             }
-
-
-            if (
-                string.IsNullOrWhiteSpace(
-                    request.LabCode
-                )
-            )
+            else
             {
-                throw new ArgumentException(
-                    "Lab Code is required."
-                );
+                if (
+                    string.IsNullOrWhiteSpace(
+                        request.UserId
+                    )
+                )
+                {
+                    throw new ArgumentException(
+                        "User ID is required."
+                    );
+                }
+
+
+                if (
+                    string.IsNullOrWhiteSpace(
+                        request.LabCode
+                    )
+                )
+                {
+                    throw new ArgumentException(
+                        "Lab Code is required."
+                    );
+                }
             }
 
 
@@ -120,21 +150,28 @@ namespace ResultEntryApi.Services
             )
             {
                 throw new ArgumentException(
-                    "No rows provided for update."
+                    "No rows provided."
                 );
             }
 
 
             request.RegistrationNo =
-                request.RegistrationNo.Trim();
+                request
+                    .RegistrationNo
+                    .Trim();
 
 
             request.UserId =
-                request.UserId.Trim();
+                request
+                    .UserId
+                    .Trim();
 
 
             request.LabCode =
-                request.LabCode.Trim();
+                request
+                    .LabCode
+                    ?.Trim()
+                ?? "";
 
 
             foreach (
@@ -148,7 +185,7 @@ namespace ResultEntryApi.Services
                 )
                 {
                     throw new ArgumentException(
-                        "Test Code is required for every row."
+                        "Test Code is required."
                     );
                 }
 
@@ -157,14 +194,19 @@ namespace ResultEntryApi.Services
                     row.TestCode.Trim();
 
 
-                /*
-                 * NABL:
-                 *
-                 * Y => Y
-                 *
-                 * everything else =>
-                 * N
-                 */
+                if (
+                    isAdmin &&
+                    string.IsNullOrWhiteSpace(
+                        row.LabCode
+                    )
+                )
+                {
+                    throw new ArgumentException(
+                        $"Lab Code missing for {row.TestCode}."
+                    );
+                }
+
+
                 row.NABL =
                     string.Equals(
                         row.NABL?.Trim(),
@@ -179,14 +221,11 @@ namespace ResultEntryApi.Services
 
             return await _repository
                 .UpdateResultsAsync(
-                    request
+                    request,
+                    isAdmin
                 );
         }
 
-
-        // =====================================================
-        // M CODE -> METHOD
-        // =====================================================
 
         public async Task<string?>
             GetMethodNameByCodeAsync(
@@ -212,10 +251,6 @@ namespace ResultEntryApi.Services
         }
 
 
-        // =====================================================
-        // METHOD SEARCH
-        // =====================================================
-
         public async Task<List<MethodLookupDto>>
             SearchMethodsAsync(
                 string searchText
@@ -227,9 +262,7 @@ namespace ResultEntryApi.Services
                 )
             )
             {
-                return new List<
-                    MethodLookupDto
-                >();
+                return new();
             }
 
 
@@ -240,11 +273,9 @@ namespace ResultEntryApi.Services
         }
 
 
-        // =====================================================
-        // SPECIFICATION SEARCH
-        // =====================================================
-
-        public async Task<List<SpecificationLookupDto>>
+        public async Task<
+            List<SpecificationLookupDto>
+        >
             SearchSpecificationsAsync(
                 string searchText
             )
@@ -255,9 +286,7 @@ namespace ResultEntryApi.Services
                 )
             )
             {
-                return new List<
-                    SpecificationLookupDto
-                >();
+                return new();
             }
 
 
