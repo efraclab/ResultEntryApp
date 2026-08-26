@@ -285,97 +285,47 @@ namespace ResultEntryApi.Repositories
             try
             {
                 const string sql = @"
-                    UPDATE TRN205
+    UPDATE TRN205
+    SET
+        TRN2LOQ = @LOQ,
+        TRN2INSTNO = @Instrument,
+        TRN2INPUT = @Result,
 
-                    SET
-                        TRN2LOQ =
-                            @LOQ,
+        TRN2OUT = '1',
+        TRN2DATA = 'Y',
 
-                        TRN2INSTNO =
-                            @Instrument,
+        TRN2HEADSPEC = @Spec,
+        TRN2REFMETHOD = @RefMethod,
 
-                        TRN2INPUT =
-                            @Result,
+        TRN2AnlstTestDt = GETDATE(),
 
-                        TRN2OUT =
-                            '1',
+        TRN2_ANALYSIST_NAME = @UserId,
 
-                        TRN2DATA =
-                            'Y',
+        ADDR_REMK =
+            CASE
+                WHEN ADDR_REMK IS NULL
+                     OR LTRIM(RTRIM(ADDR_REMK)) = ''
+                THEN
+                    @UserId + ' | ' +
+                    CONVERT(VARCHAR(19), GETDATE(), 120)
 
-                        TRN2HEADSPEC =
-                            @Spec,
+                ELSE
+                    ADDR_REMK +
+                    ' ; ' +
+                    @UserId + ' | ' +
+                    CONVERT(VARCHAR(19), GETDATE(), 120)
+            END,
 
-                        TRN2REFMETHOD =
-                            @RefMethod,
+        TRN2NABLYN = @NABL,
+        TRN2OUTSTR = @Unit,
+        TRN2METHOD = @Method,
+        TRN2_METHDO_DTL = @MethodCode
 
-                        TRN2AnlstTestDt =
-                            GETDATE(),
-
-                        /*
-                         * Append audit history.
-                         *
-                         * Previous values are NOT removed.
-                         */
-                        ADDR_REMK =
-                            CASE
-
-                                WHEN ADDR_REMK IS NULL
-                                     OR LTRIM(
-                                            RTRIM(
-                                                ADDR_REMK
-                                            )
-                                        ) = ''
-
-                                THEN
-                                    @UserId
-                                    + ' | '
-                                    + CONVERT(
-                                        VARCHAR(19),
-                                        GETDATE(),
-                                        120
-                                    )
-
-                                ELSE
-                                    ADDR_REMK
-                                    + ' ; '
-                                    + @UserId
-                                    + ' | '
-                                    + CONVERT(
-                                        VARCHAR(19),
-                                        GETDATE(),
-                                        120
-                                    )
-
-                            END,
-
-                        TRN2NABLYN =
-                            @NABL,
-
-                        TRN2OUTSTR =
-                            @Unit,
-
-                        TRN2METHOD =
-                            @Method,
-
-                        TRN2_METHDO_DTL =
-                            @MethodCode
-
-
-                    WHERE TRN2REFNO =
-                        @RegistrationNo
-
-                      AND TRN2HEADER =
-                        @TestCode
-
-                      AND TRN2DEPARTCD =
-                        @LabCode
-
-                      AND ISNULL(
-                            TRN2HODREVIEW,
-                            'N'
-                          ) <> 'Y';
-                ";
+    WHERE TRN2REFNO = @RegistrationNo
+      AND TRN2HEADER = @TestCode
+      AND TRN2DEPARTCD = @LabCode
+      AND ISNULL(TRN2HODREVIEW, 'N') <> 'Y';
+";
 
 
                 foreach (
