@@ -293,7 +293,7 @@ body {
 .result-table {
     width: 100%;
 
-    min-width: 1850px;
+    min-width: 2080px;
 
     border-collapse: collapse;
     border-spacing: 0;
@@ -373,94 +373,77 @@ body {
 /* =========================================================
    COLUMN WIDTHS
 ========================================================= */
-
 /* Sample ID */
-
 .result-table th:nth-child(1),
 .result-table td:nth-child(1) {
     width: 265px;
 }
 
-
 /* Test Code */
-
 .result-table th:nth-child(2),
 .result-table td:nth-child(2) {
     width: 110px;
 }
 
-
-/* M Code */
-
+/* Parameter Name */
 .result-table th:nth-child(3),
 .result-table td:nth-child(3) {
+    width: 230px;
+}
+
+/* M Code */
+.result-table th:nth-child(4),
+.result-table td:nth-child(4) {
     width: 105px;
 }
 
-
 /* Method */
-
-.result-table th:nth-child(4),
-.result-table td:nth-child(4) {
+.result-table th:nth-child(5),
+.result-table td:nth-child(5) {
     width: 225px;
 }
 
-
 /* Unit */
-
-.result-table th:nth-child(5),
-.result-table td:nth-child(5) {
+.result-table th:nth-child(6),
+.result-table td:nth-child(6) {
     width: 110px;
 }
 
-
 /* Instrument */
-
-.result-table th:nth-child(6),
-.result-table td:nth-child(6) {
+.result-table th:nth-child(7),
+.result-table td:nth-child(7) {
     width: 150px;
 }
 
-
 /* LOQ */
-
-.result-table th:nth-child(7),
-.result-table td:nth-child(7) {
+.result-table th:nth-child(8),
+.result-table td:nth-child(8) {
     width: 100px;
 }
 
-
 /* Result */
-
-.result-table th:nth-child(8),
-.result-table td:nth-child(8) {
+.result-table th:nth-child(9),
+.result-table td:nth-child(9) {
     width: 280px;
 }
 
-
 /* NABL */
-
-.result-table th:nth-child(9),
-.result-table td:nth-child(9) {
+.result-table th:nth-child(10),
+.result-table td:nth-child(10) {
     width: 90px;
 }
 
-
 /* Spec */
-
-.result-table th:nth-child(10),
-.result-table td:nth-child(10) {
-    width: 225px;
-}
-
-
-/* Ref Method */
-
 .result-table th:nth-child(11),
 .result-table td:nth-child(11) {
     width: 225px;
 }
 
+/* Ref Method */
+.result-table th:nth-child(12),
+.result-table td:nth-child(12) {
+    width: 225px;
+}
 
 /* =========================================================
    NORMAL INPUTS
@@ -1311,4 +1294,16 @@ button:disabled {
 .logout-button:hover {
     background: #c93b3b;
     color: #ffffff;
+}
+
+.parameter-name-cell {
+    color: #1f3550;
+
+    font-weight: 600;
+
+    text-align: left;
+
+    white-space: normal;
+
+    line-height: 17px;
 }

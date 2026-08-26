@@ -37,34 +37,42 @@ namespace ResultEntryApi.Repositories
             )
         {
             const string sql = @"
-                SELECT
-                    TRN2REFNO,
-                    TRN2HEADER,
-                    TRN2DEPARTCD,
-                    TRN2_METHDO_DTL,
-                    TRN2METHOD,
-                    TRN2OUTSTR,
-                    TRN2INSTNO,
-                    TRN2LOQ,
-                    TRN2INPUT,
-                    TRN2NABLYN,
-                    TRN2HEADSPEC,
-                    TRN2REFMETHOD,
-                    TRN2HODREVIEW,
-                    TRN2OUT,
-                    TRN2DATA,
-                    TRN2AnlstTestDt
+    SELECT
+        T.TRN2REFNO,
+        T.TRN2HEADER,
 
-                FROM TRN205
+        H.HEADDESC AS ParameterName,
 
-                WHERE TRN2REFNO =
-                    @RegistrationNo
+        T.TRN2DEPARTCD,
+        T.TRN2_METHDO_DTL,
+        T.TRN2METHOD,
+        T.TRN2OUTSTR,
+        T.TRN2INSTNO,
+        T.TRN2LOQ,
+        T.TRN2INPUT,
+        T.TRN2NABLYN,
+        T.TRN2HEADSPEC,
+        T.TRN2REFMETHOD,
+        T.TRN2HODREVIEW,
+        T.TRN2OUT,
+        T.TRN2DATA,
+        T.TRN2AnlstTestDt
 
-                  AND TRN2DEPARTCD =
-                    @LabCode
+    FROM TRN205 T
 
-                ORDER BY TRN2HEADER;
-            ";
+    LEFT JOIN OHEADMST H
+        ON LTRIM(RTRIM(H.HEADCD))
+           =
+           LTRIM(RTRIM(T.TRN2HEADER))
+
+    WHERE T.TRN2REFNO =
+        @RegistrationNo
+
+      AND T.TRN2DEPARTCD =
+        @LabCode
+
+    ORDER BY T.TRN2HEADER;
+";
 
 
             return await ReadRows(
@@ -85,33 +93,41 @@ namespace ResultEntryApi.Repositories
             )
         {
             const string sql = @"
-                SELECT
-                    TRN2REFNO,
-                    TRN2HEADER,
-                    TRN2DEPARTCD,
-                    TRN2_METHDO_DTL,
-                    TRN2METHOD,
-                    TRN2OUTSTR,
-                    TRN2INSTNO,
-                    TRN2LOQ,
-                    TRN2INPUT,
-                    TRN2NABLYN,
-                    TRN2HEADSPEC,
-                    TRN2REFMETHOD,
-                    TRN2HODREVIEW,
-                    TRN2OUT,
-                    TRN2DATA,
-                    TRN2AnlstTestDt
+    SELECT
+        T.TRN2REFNO,
+        T.TRN2HEADER,
 
-                FROM TRN205
+        H.HEADDESC AS ParameterName,
 
-                WHERE TRN2REFNO =
-                    @RegistrationNo
+        T.TRN2DEPARTCD,
+        T.TRN2_METHDO_DTL,
+        T.TRN2METHOD,
+        T.TRN2OUTSTR,
+        T.TRN2INSTNO,
+        T.TRN2LOQ,
+        T.TRN2INPUT,
+        T.TRN2NABLYN,
+        T.TRN2HEADSPEC,
+        T.TRN2REFMETHOD,
+        T.TRN2HODREVIEW,
+        T.TRN2OUT,
+        T.TRN2DATA,
+        T.TRN2AnlstTestDt
 
-                ORDER BY
-                    TRN2DEPARTCD,
-                    TRN2HEADER;
-            ";
+    FROM TRN205 T
+
+    LEFT JOIN OHEADMST H
+        ON LTRIM(RTRIM(H.HEADCD))
+           =
+           LTRIM(RTRIM(T.TRN2HEADER))
+
+    WHERE T.TRN2REFNO =
+        @RegistrationNo
+
+    ORDER BY
+        T.TRN2DEPARTCD,
+        T.TRN2HEADER;
+";
 
 
             return await ReadRows(
@@ -207,7 +223,12 @@ namespace ResultEntryApi.Repositories
                             "TRN2HEADER"
                         ]
                     ),
-
+                ParameterName =
+    Display(
+        reader[
+            "ParameterName"
+        ]
+    ),
                 LabCode =
                     Display(
                         reader[

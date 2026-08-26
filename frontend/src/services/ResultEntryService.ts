@@ -15,6 +15,8 @@ export interface ResultEntry {
 
     testCode: string;
 
+    parameterName: string;
+
     /*
      * TRN2DEPARTCD
      *

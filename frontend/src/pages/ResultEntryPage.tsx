@@ -1045,6 +1045,10 @@ const ResultEntryPage = () => {
                                 displayValue(
                                     row.testCode
                                 ),
+                            parameterName:
+                                displayValue(
+                                    row.parameterName
+                                ),
 
                             labCode:
                                 displayValue(
@@ -1889,6 +1893,7 @@ const ResultEntryPage = () => {
                                 <tr>
                                     <th>Sample ID</th>
                                     <th>Test Code</th>
+                                    <th>Parameter Name</th>
                                     <th>M Code</th>
                                     <th>Method</th>
                                     <th>Unit</th>
@@ -1950,7 +1955,9 @@ const ResultEntryPage = () => {
                                                     {row.testCode}
                                                 </td>
 
-
+                                                <td className="readonly-cell parameter-name-cell">
+                                                    {row.parameterName}
+                                                </td>
                                                 <td>
 
                                                     <input
