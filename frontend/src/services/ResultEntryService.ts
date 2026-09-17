@@ -141,6 +141,34 @@ interface SpecificationSearchResponse {
 
 
 /* =========================================================
+   UNIT
+========================================================= */
+
+export interface UnitSuggestion {
+    unit: string;
+}
+
+interface UnitSearchResponse {
+    success: boolean;
+    data: UnitSuggestion[];
+}
+
+
+/* =========================================================
+   LOQ
+========================================================= */
+
+export interface LoqSuggestion {
+    loq: string;
+}
+
+interface LoqSearchResponse {
+    success: boolean;
+    data: LoqSuggestion[];
+}
+
+
+/* =========================================================
    ADMIN
 ========================================================= */
 
@@ -445,7 +473,67 @@ export const searchSpecifications =
         return response.data.data ?? [];
     };
 
-    export const adminLogout = async (
+
+
+/* =========================================================
+   UNIT SEARCH
+========================================================= */
+
+export const searchUnits =
+    async (
+        search: string
+    ): Promise<UnitSuggestion[]> => {
+
+        const cleaned = search.trim();
+
+        if (!cleaned || cleaned === "-") {
+            return [];
+        }
+
+        const response =
+            await axios.get<UnitSearchResponse>(
+                `${API_BASE_URL}/result-entry/units/search`,
+                {
+                    params: {
+                        search: cleaned,
+                    },
+                }
+            );
+
+        return response.data.data ?? [];
+    };
+
+
+/* =========================================================
+   LOQ SEARCH
+========================================================= */
+
+export const searchLoqs =
+    async (
+        search: string
+    ): Promise<LoqSuggestion[]> => {
+
+        const cleaned = search.trim();
+
+        if (!cleaned || cleaned === "-") {
+            return [];
+        }
+
+        const response =
+            await axios.get<LoqSearchResponse>(
+                `${API_BASE_URL}/result-entry/loqs/search`,
+                {
+                    params: {
+                        search: cleaned,
+                    },
+                }
+            );
+
+        return response.data.data ?? [];
+    };
+
+
+export const adminLogout = async (
     token: string
 ): Promise<void> => {
 

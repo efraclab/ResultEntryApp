@@ -40,5 +40,17 @@ namespace ResultEntryApi.Repositories
             SearchSpecificationsAsync(
                 string searchText
             );
+
+
+        Task<List<UnitLookupDto>>
+            SearchUnitsAsync(
+                string searchText
+            );
+
+
+        Task<List<LoqLookupDto>>
+            SearchLoqsAsync(
+                string searchText
+            );
     }
 }

@@ -303,6 +303,50 @@ namespace ResultEntryApi.Controllers
         }
 
 
+        [HttpGet("units/search")]
+        public async Task<IActionResult>
+            SearchUnits(
+                [FromQuery]
+                string search
+            )
+        {
+            return Ok(
+                new
+                {
+                    success = true,
+
+                    data =
+                        await _service
+                            .SearchUnitsAsync(
+                                search
+                            )
+                }
+            );
+        }
+
+
+        [HttpGet("loqs/search")]
+        public async Task<IActionResult>
+            SearchLoqs(
+                [FromQuery]
+                string search
+            )
+        {
+            return Ok(
+                new
+                {
+                    success = true,
+
+                    data =
+                        await _service
+                            .SearchLoqsAsync(
+                                search
+                            )
+                }
+            );
+        }
+
+
         private bool IsAdmin()
         {
             var auth =

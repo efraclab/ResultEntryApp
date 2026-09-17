@@ -16,11 +16,15 @@ import {
     getResultsByRegistration,
     searchMethods,
     searchSpecifications,
+    searchUnits,
+    searchLoqs,
     updateResults,
     validateAdminSession,
     type MethodSuggestion,
     type ResultEntry,
     type SpecificationSuggestion,
+    type UnitSuggestion,
+    type LoqSuggestion,
 } from "../services/ResultEntryService";
 
 import "./ResultEntryPage.css";
@@ -757,6 +761,253 @@ const SpecificationSearchBox = ({
 
                 )}
 
+        </div>
+    );
+};
+
+
+
+/* =========================================================
+   UNIT SEARCH
+========================================================= */
+
+interface UnitSearchProps {
+    value: string;
+    disabled: boolean;
+    onChange: (value: string) => void;
+}
+
+const UnitSearchBox = ({
+    value,
+    disabled,
+    onChange,
+}: UnitSearchProps) => {
+    const [text, setText] = useState(value);
+    const [suggestions, setSuggestions] = useState<UnitSuggestion[]>([]);
+    const [userTyped, setUserTyped] = useState(false);
+    const [searching, setSearching] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    useEffect(() => {
+        if (!userTyped) {
+            setText(value);
+        }
+    }, [value, userTyped]);
+
+    useEffect(() => {
+        if (disabled || !userTyped) return;
+
+        const searchText = text.trim();
+
+        if (!searchText || searchText === "-") {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        const timer = window.setTimeout(async () => {
+            try {
+                setSearching(true);
+                const result = await searchUnits(searchText);
+                setSuggestions(result);
+                setShowSuggestions(result.length > 0);
+            } catch (error) {
+                console.error("Unit search failed:", error);
+                setSuggestions([]);
+                setShowSuggestions(false);
+            } finally {
+                setSearching(false);
+            }
+        }, 300);
+
+        return () => window.clearTimeout(timer);
+    }, [text, disabled, userTyped]);
+
+    return (
+        <div className="unit-search-wrapper">
+            <input
+                type="text"
+                value={text}
+                disabled={disabled}
+                placeholder="Search Unit"
+                autoComplete="off"
+                onFocus={() => {
+                    if (userTyped && suggestions.length > 0) {
+                        setShowSuggestions(true);
+                    }
+                }}
+                onChange={(e) => {
+                    const newValue = e.target.value;
+                    setText(newValue);
+                    onChange(newValue);
+
+                    const cleaned = newValue.trim();
+
+                    if (!cleaned || cleaned === "-") {
+                        setUserTyped(false);
+                        setSuggestions([]);
+                        setShowSuggestions(false);
+                        return;
+                    }
+
+                    setUserTyped(true);
+                    setShowSuggestions(false);
+                }}
+                onBlur={() => {
+                    window.setTimeout(() => setShowSuggestions(false), 200);
+                }}
+            />
+
+            {searching && (
+                <div className="unit-search-status">Searching...</div>
+            )}
+
+            {!disabled &&
+                showSuggestions &&
+                suggestions.length > 0 && (
+                    <div className="unit-suggestions">
+                        {suggestions.map((item, index) => (
+                            <button
+                                key={`${item.unit}-${index}`}
+                                type="button"
+                                className="unit-suggestion-item"
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setText(item.unit);
+                                    setUserTyped(false);
+                                    setSuggestions([]);
+                                    setShowSuggestions(false);
+                                    onChange(item.unit);
+                                }}
+                            >
+                                {item.unit}
+                            </button>
+                        ))}
+                    </div>
+                )}
+        </div>
+    );
+};
+
+
+/* =========================================================
+   LOQ SEARCH
+========================================================= */
+
+interface LoqSearchProps {
+    value: string;
+    disabled: boolean;
+    onChange: (value: string) => void;
+}
+
+const LoqSearchBox = ({
+    value,
+    disabled,
+    onChange,
+}: LoqSearchProps) => {
+    const [text, setText] = useState(value);
+    const [suggestions, setSuggestions] = useState<LoqSuggestion[]>([]);
+    const [userTyped, setUserTyped] = useState(false);
+    const [searching, setSearching] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    useEffect(() => {
+        if (!userTyped) {
+            setText(value);
+        }
+    }, [value, userTyped]);
+
+    useEffect(() => {
+        if (disabled || !userTyped) return;
+
+        const searchText = text.trim();
+
+        if (!searchText || searchText === "-") {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        const timer = window.setTimeout(async () => {
+            try {
+                setSearching(true);
+                const result = await searchLoqs(searchText);
+                setSuggestions(result);
+                setShowSuggestions(result.length > 0);
+            } catch (error) {
+                console.error("LOQ search failed:", error);
+                setSuggestions([]);
+                setShowSuggestions(false);
+            } finally {
+                setSearching(false);
+            }
+        }, 300);
+
+        return () => window.clearTimeout(timer);
+    }, [text, disabled, userTyped]);
+
+    return (
+        <div className="loq-search-wrapper">
+            <input
+                type="text"
+                value={text}
+                disabled={disabled}
+                placeholder="Search LOQ"
+                autoComplete="off"
+                onFocus={() => {
+                    if (userTyped && suggestions.length > 0) {
+                        setShowSuggestions(true);
+                    }
+                }}
+                onChange={(e) => {
+                    const newValue = e.target.value;
+                    setText(newValue);
+                    onChange(newValue);
+
+                    const cleaned = newValue.trim();
+
+                    if (!cleaned || cleaned === "-") {
+                        setUserTyped(false);
+                        setSuggestions([]);
+                        setShowSuggestions(false);
+                        return;
+                    }
+
+                    setUserTyped(true);
+                    setShowSuggestions(false);
+                }}
+                onBlur={() => {
+                    window.setTimeout(() => setShowSuggestions(false), 200);
+                }}
+            />
+
+            {searching && (
+                <div className="loq-search-status">Searching...</div>
+            )}
+
+            {!disabled &&
+                showSuggestions &&
+                suggestions.length > 0 && (
+                    <div className="loq-suggestions">
+                        {suggestions.map((item, index) => (
+                            <button
+                                key={`${item.loq}-${index}`}
+                                type="button"
+                                className="loq-suggestion-item"
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    setText(item.loq);
+                                    setUserTyped(false);
+                                    setSuggestions([]);
+                                    setShowSuggestions(false);
+                                    onChange(item.loq);
+                                }}
+                            >
+                                {item.loq}
+                            </button>
+                        ))}
+                    </div>
+                )}
         </div>
     );
 };
@@ -2053,17 +2304,17 @@ const ResultEntryPage = () => {
 
                                                 <td>
 
-                                                    <input
-                                                        type="text"
+                                                    <UnitSearchBox
                                                         value={row.unit}
                                                         disabled={reviewed}
-                                                        onChange={(e) =>
+                                                        onChange={(value) => {
                                                             handleChange(
                                                                 index,
                                                                 "unit",
-                                                                e.target.value
-                                                            )
-                                                        }
+                                                                value
+                                                            );
+                                                            setError("");
+                                                        }}
                                                     />
 
                                                 </td>
@@ -2089,17 +2340,17 @@ const ResultEntryPage = () => {
 
                                                 <td>
 
-                                                    <input
-                                                        type="text"
+                                                    <LoqSearchBox
                                                         value={row.loq}
                                                         disabled={reviewed}
-                                                        onChange={(e) =>
+                                                        onChange={(value) => {
                                                             handleChange(
                                                                 index,
                                                                 "loq",
-                                                                e.target.value
-                                                            )
-                                                        }
+                                                                value
+                                                            );
+                                                            setError("");
+                                                        }}
                                                     />
 
                                                 </td>

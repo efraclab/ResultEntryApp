@@ -867,6 +867,126 @@ namespace ResultEntryApi.Repositories
 
 
         // =====================================================
+        // UNIT SEARCH
+        // Source: TRN205.HEAD_TESTUNIT
+        // =====================================================
+
+        public async Task<List<UnitLookupDto>>
+            SearchUnitsAsync(
+                string searchText
+            )
+        {
+            const string sql = @"
+                SELECT DISTINCT TOP 10
+                    LTRIM(RTRIM(HEAD_TESTUNIT)) AS HEAD_TESTUNIT
+
+                FROM TRN205
+
+                WHERE HEAD_TESTUNIT IS NOT NULL
+                  AND LTRIM(RTRIM(HEAD_TESTUNIT)) <> ''
+                  AND LTRIM(RTRIM(HEAD_TESTUNIT)) <> '-'
+                  AND HEAD_TESTUNIT LIKE @Search
+
+                ORDER BY HEAD_TESTUNIT;
+            ";
+
+            var result = new List<UnitLookupDto>();
+
+            await using var connection =
+                new SqlConnection(_connectionString);
+
+            await connection.OpenAsync();
+
+            await using var command =
+                new SqlCommand(sql, connection);
+
+            AddString(
+                command,
+                "@Search",
+                $"%{searchText.Trim()}%"
+            );
+
+            await using var reader =
+                await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.Add(
+                    new UnitLookupDto
+                    {
+                        Unit = reader["HEAD_TESTUNIT"]
+                            ?.ToString()
+                            ?.Trim()
+                            ?? ""
+                    }
+                );
+            }
+
+            return result;
+        }
+
+
+        // =====================================================
+        // LOQ SEARCH
+        // Source: SpecificationMst.SpecLOQ
+        // =====================================================
+
+        public async Task<List<LoqLookupDto>>
+            SearchLoqsAsync(
+                string searchText
+            )
+        {
+            const string sql = @"
+                SELECT DISTINCT TOP 10
+                    LTRIM(RTRIM(SpecLOQ)) AS SpecLOQ
+
+                FROM SpecificationMst
+
+                WHERE SpecLOQ IS NOT NULL
+                  AND LTRIM(RTRIM(SpecLOQ)) <> ''
+                  AND LTRIM(RTRIM(SpecLOQ)) <> '-'
+                  AND SpecLOQ LIKE @Search
+
+                ORDER BY SpecLOQ;
+            ";
+
+            var result = new List<LoqLookupDto>();
+
+            await using var connection =
+                new SqlConnection(_connectionString);
+
+            await connection.OpenAsync();
+
+            await using var command =
+                new SqlCommand(sql, connection);
+
+            AddString(
+                command,
+                "@Search",
+                $"%{searchText.Trim()}%"
+            );
+
+            await using var reader =
+                await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.Add(
+                    new LoqLookupDto
+                    {
+                        Loq = reader["SpecLOQ"]
+                            ?.ToString()
+                            ?.Trim()
+                            ?? ""
+                    }
+                );
+            }
+
+            return result;
+        }
+
+
+        // =====================================================
         // HELPERS
         // =====================================================
 

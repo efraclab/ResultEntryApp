@@ -295,5 +295,40 @@ namespace ResultEntryApi.Services
                     searchText.Trim()
                 );
         }
+
+
+        public async Task<List<UnitLookupDto>>
+            SearchUnitsAsync(
+                string searchText
+            )
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return new();
+            }
+
+            return await _repository
+                .SearchUnitsAsync(
+                    searchText.Trim()
+                );
+        }
+
+
+        public async Task<List<LoqLookupDto>>
+            SearchLoqsAsync(
+                string searchText
+            )
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return new();
+            }
+
+            return await _repository
+                .SearchLoqsAsync(
+                    searchText.Trim()
+                );
+        }
+
     }
 }
