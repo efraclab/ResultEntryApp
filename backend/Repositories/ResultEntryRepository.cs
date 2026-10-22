@@ -789,62 +789,13 @@ namespace ResultEntryApi.Repositories
             )
         {
             /*
-             * Sources:
-             *  1) SpecificationMst.SpecName   (master list)
-             *  2) TRN205.TRN2HEADSPEC         (values already saved
-             *     by users, e.g. "NMT: 0.1", which may not exist
-             *     in the master)
-             * Matching ignores spaces so "NMT:0.1" finds "NMT: 0.1".
-             * LIKE wildcards typed by the user are escaped.
+             * Spaces ignored; LIKE wildcards escaped.
              */
-            const string sql = @"
-                SELECT TOP 10 SpecName
-                FROM
-                (
-                    SELECT LTRIM(RTRIM(SpecName)) AS SpecName
-                    FROM SpecificationMst
-                    WHERE SpecName IS NOT NULL
-
-                    UNION
-
-                    SELECT LTRIM(RTRIM(TRN2HEADSPEC)) AS SpecName
-                    FROM TRN205
-                    WHERE TRN2HEADSPEC IS NOT NULL
-                ) S
-                WHERE SpecName <> ''
-                  AND SpecName <> '-'
-                  AND REPLACE(SpecName, ' ', '')
-                      LIKE @Search ESCAPE '\'
-                ORDER BY
-                    CASE WHEN REPLACE(SpecName, ' ', '')
-                              LIKE @StartsWith ESCAPE '\'
-                         THEN 0 ELSE 1 END,
-                    LEN(SpecName),
-                    SpecName;
-            ";
-
-
-            var result =
-                new List<
-                    SpecificationLookupDto
-                >();
-
-
-            await using var connection =
-                new SqlConnection(
-                    _connectionString
-                );
-
-
-            await connection.OpenAsync();
-
-
-            await using var command =
-                new SqlCommand(
-                    sql,
-                    connection
-                );
-
+            string Esc(string s) =>
+                s.Replace("\\", "\\\\")
+                 .Replace("%", "\\%")
+                 .Replace("_", "\\_")
+                 .Replace("[", "\\[");
 
             var normalized =
                 searchText
@@ -854,44 +805,163 @@ namespace ResultEntryApi.Repositories
                     .Replace("_", "\\_")
                     .Replace("[", "\\[");
 
+            // AddString trims, so wildcards at the ends are safe
+            var contains = $"%{Esc(searchText.Trim())}%";
+
+            var containsNoSpace = $"%{normalized}%";
+
+            var names =
+                new List<string>();
+
+            var failures = 0;
+
+            var lastError = "";
+
+
+            // 1) Master list
+            try
+            {
+                await RunSpecQueryAsync(
+                    @"
+                SELECT DISTINCT TOP 10
+                    LTRIM(RTRIM(CAST(SpecName AS NVARCHAR(500))))
+                        AS SpecValue
+                FROM SpecificationMst
+                WHERE SpecName IS NOT NULL
+                  AND (
+                        CAST(SpecName AS NVARCHAR(500))
+                            LIKE @Search ESCAPE '\'
+                     OR REPLACE(
+                            CAST(SpecName AS NVARCHAR(500)),
+                            ' ', '')
+                            LIKE @SearchNoSpace ESCAPE '\'
+                      )
+                ORDER BY SpecValue;",
+                    contains,
+                    containsNoSpace,
+                    names
+                );
+            }
+            catch (Exception ex)
+            {
+                failures++;
+                lastError = ex.Message;
+                Console.WriteLine(
+                    "Spec master search failed: " + ex.Message);
+            }
+
+
+            // 2) Values already saved on results.
+            //    Failure here must never break suggestions.
+            try
+            {
+                await RunSpecQueryAsync(
+                    @"
+                    SELECT DISTINCT TOP 10
+                        LTRIM(RTRIM(
+                            CAST(TRN2HEADSPEC AS NVARCHAR(500)))
+                        ) AS SpecValue
+                    FROM TRN205
+                    WHERE TRN2HEADSPEC IS NOT NULL
+                      AND (
+                            CAST(TRN2HEADSPEC AS NVARCHAR(500))
+                                LIKE @Search ESCAPE '\'
+                         OR REPLACE(
+                                CAST(TRN2HEADSPEC AS NVARCHAR(500)),
+                                ' ', '')
+                                LIKE @SearchNoSpace ESCAPE '\'
+                          )
+                    ORDER BY SpecValue;",
+                    contains,
+                    containsNoSpace,
+                    names
+                );
+            }
+            catch (Exception ex)
+            {
+                failures++;
+                lastError = ex.Message;
+                Console.WriteLine(
+                    "Spec saved-values search failed: " + ex.Message);
+            }
+
+            // both failed -> surface the real error instead of "no results"
+            if (failures == 2)
+            {
+                throw new InvalidOperationException(
+                    "Spec search failed: " + lastError);
+            }
+
+
+            return names
+                .Where(n =>
+                    !string.IsNullOrWhiteSpace(n) &&
+                    n != "-")
+                .Distinct(
+                    StringComparer.OrdinalIgnoreCase)
+                .OrderBy(n =>
+                    n.Replace(" ", "")
+                     .StartsWith(
+                        normalized.Replace("\\", ""),
+                        StringComparison.OrdinalIgnoreCase)
+                        ? 0 : 1)
+                .ThenBy(n => n.Length)
+                .ThenBy(n => n)
+                .Take(10)
+                .Select(n =>
+                    new SpecificationLookupDto
+                    {
+                        SpecName = n
+                    })
+                .ToList();
+        }
+
+
+        private async Task RunSpecQueryAsync(
+            string sql,
+            string search,
+            string searchNoSpace,
+            List<string> names
+        )
+        {
+            await using var connection =
+                new SqlConnection(
+                    _connectionString
+                );
+
+            await connection.OpenAsync();
+
+            await using var command =
+                new SqlCommand(
+                    sql,
+                    connection
+                );
+
             AddString(
                 command,
                 "@Search",
-                $"%{normalized}%"
+                search
             );
 
             AddString(
                 command,
-                "@StartsWith",
-                $"{normalized}%"
+                "@SearchNoSpace",
+                searchNoSpace
             );
-
 
             await using var reader =
                 await command
                     .ExecuteReaderAsync();
 
-
-            while (
-                await reader.ReadAsync()
-            )
+            while (await reader.ReadAsync())
             {
-                result.Add(
-                    new SpecificationLookupDto
-                    {
-                        SpecName =
-                            reader[
-                                "SpecName"
-                            ]
-                            ?.ToString()
-                            ?.Trim()
-                            ?? ""
-                    }
+                names.Add(
+                    reader["SpecValue"]
+                        ?.ToString()
+                        ?.Trim()
+                    ?? ""
                 );
             }
-
-
-            return result;
         }
 
 

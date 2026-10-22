@@ -297,15 +297,6 @@ const MethodSearchBox = ({
 
     useEffect(() => {
 
-        /*
-         * Only react to EXTERNAL changes (cancel / reload).
-         * Our own typing is echoed back through `value`
-         * and must not kill the suggestion state.
-         */
-        if (value === text) {
-            return;
-        }
-
         setText(value);
 
         setUserTyped(false);
@@ -578,12 +569,27 @@ const SpecificationSearchBox = ({
 
 
     const [
+        searchState,
+        setSearchState,
+    ] = useState<"" | "empty" | "error">("");
+
+
+    const [
         showSuggestions,
         setShowSuggestions,
     ] = useState(false);
 
 
     useEffect(() => {
+
+        /*
+         * Only react to EXTERNAL changes (cancel / reload).
+         * Our own typing is echoed back through `value`
+         * and must not kill the suggestion state.
+         */
+        if (value === text) {
+            return;
+        }
 
         setText(value);
 
@@ -640,16 +646,29 @@ const SpecificationSearchBox = ({
 
                         setSuggestions(result);
 
+                        setSearchState(
+                            result.length === 0
+                                ? "empty"
+                                : ""
+                        );
+
                         setShowSuggestions(
                             true
                         );
 
                     }
-                    catch {
+                    catch (err) {
+
+                        console.error(
+                            "Spec search failed",
+                            err
+                        );
 
                         setSuggestions([]);
 
-                        setShowSuggestions(false);
+                        setSearchState("error");
+
+                        setShowSuggestions(true);
 
                     }
                     finally {
@@ -724,6 +743,22 @@ const SpecificationSearchBox = ({
                 </div>
 
             )}
+
+
+            {!disabled &&
+                userTyped &&
+                showSuggestions &&
+                !searching &&
+                searchState !== "" &&
+                suggestions.length === 0 && (
+
+                    <div className="spec-search-status">
+                        {searchState === "error"
+                            ? "Search failed - check API"
+                            : "No matches"}
+                    </div>
+
+                )}
 
 
             {!disabled &&
