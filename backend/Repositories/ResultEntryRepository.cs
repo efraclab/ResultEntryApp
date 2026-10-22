@@ -788,24 +788,39 @@ namespace ResultEntryApi.Repositories
                 string searchText
             )
         {
+            /*
+             * Sources:
+             *  1) SpecificationMst.SpecName   (master list)
+             *  2) TRN205.TRN2HEADSPEC         (values already saved
+             *     by users, e.g. "NMT: 0.1", which may not exist
+             *     in the master)
+             * Matching ignores spaces so "NMT:0.1" finds "NMT: 0.1".
+             * LIKE wildcards typed by the user are escaped.
+             */
             const string sql = @"
-                SELECT DISTINCT TOP 5
-                    SpecName
+                SELECT TOP 10 SpecName
+                FROM
+                (
+                    SELECT LTRIM(RTRIM(SpecName)) AS SpecName
+                    FROM SpecificationMst
+                    WHERE SpecName IS NOT NULL
 
-                FROM SpecificationMst
+                    UNION
 
-                WHERE SpecName IS NOT NULL
-
-                  AND LTRIM(
-                        RTRIM(
-                            SpecName
-                        )
-                      ) <> ''
-
-                  AND SpecName LIKE
-                        @Search
-
-                ORDER BY SpecName;
+                    SELECT LTRIM(RTRIM(TRN2HEADSPEC)) AS SpecName
+                    FROM TRN205
+                    WHERE TRN2HEADSPEC IS NOT NULL
+                ) S
+                WHERE SpecName <> ''
+                  AND SpecName <> '-'
+                  AND REPLACE(SpecName, ' ', '')
+                      LIKE @Search ESCAPE '\'
+                ORDER BY
+                    CASE WHEN REPLACE(SpecName, ' ', '')
+                              LIKE @StartsWith ESCAPE '\'
+                         THEN 0 ELSE 1 END,
+                    LEN(SpecName),
+                    SpecName;
             ";
 
 
@@ -831,10 +846,24 @@ namespace ResultEntryApi.Repositories
                 );
 
 
+            var normalized =
+                searchText
+                    .Replace(" ", "")
+                    .Replace("\\", "\\\\")
+                    .Replace("%", "\\%")
+                    .Replace("_", "\\_")
+                    .Replace("[", "\\[");
+
             AddString(
                 command,
                 "@Search",
-                $"%{searchText.Trim()}%"
+                $"%{normalized}%"
+            );
+
+            AddString(
+                command,
+                "@StartsWith",
+                $"{normalized}%"
             );
 
 

@@ -297,6 +297,15 @@ const MethodSearchBox = ({
 
     useEffect(() => {
 
+        /*
+         * Only react to EXTERNAL changes (cancel / reload).
+         * Our own typing is echoed back through `value`
+         * and must not kill the suggestion state.
+         */
+        if (value === text) {
+            return;
+        }
+
         setText(value);
 
         setUserTyped(false);
@@ -525,6 +534,8 @@ interface SpecSearchProps {
 
     disabled: boolean;
 
+    onChange: (value: string) => void;
+
     onSelect:
     (
         item:
@@ -536,6 +547,7 @@ interface SpecSearchProps {
 const SpecificationSearchBox = ({
     value,
     disabled,
+    onChange,
     onSelect,
 }: SpecSearchProps) => {
 
@@ -683,6 +695,11 @@ const SpecificationSearchBox = ({
 
                     setShowSuggestions(
                         true
+                    );
+
+                    // typed / pasted value goes to the row immediately
+                    onChange(
+                        e.target.value
                     );
                 }}
 
@@ -1092,6 +1109,70 @@ const ResultEntryPage = () => {
         rows,
         setRows,
     ] = useState<ResultEntry[]>([]);
+
+
+    /* top horizontal scrollbar sync */
+    const topScrollRef =
+        useRef<HTMLDivElement>(null);
+
+    const tableScrollRef =
+        useRef<HTMLDivElement>(null);
+
+    const [
+        tableScrollWidth,
+        setTableScrollWidth,
+    ] = useState(0);
+
+    const syncingScroll =
+        useRef(false);
+
+    const syncScroll = (
+        source: "top" | "table"
+    ) => {
+        const top = topScrollRef.current;
+        const table = tableScrollRef.current;
+
+        if (!top || !table) return;
+
+        if (syncingScroll.current) {
+            syncingScroll.current = false;
+            return;
+        }
+
+        syncingScroll.current = true;
+
+        if (source === "top") {
+            table.scrollLeft = top.scrollLeft;
+        } else {
+            top.scrollLeft = table.scrollLeft;
+        }
+    };
+
+    useEffect(() => {
+        const table = tableScrollRef.current;
+
+        if (!table) return;
+
+        const update = () =>
+            setTableScrollWidth(
+                table.scrollWidth
+            );
+
+        update();
+
+        const observer =
+            new ResizeObserver(update);
+
+        observer.observe(table);
+
+        if (table.firstElementChild) {
+            observer.observe(
+                table.firstElementChild
+            );
+        }
+
+        return () => observer.disconnect();
+    }, [rows.length]);
 
 
     const [
@@ -2135,7 +2216,33 @@ const ResultEntryPage = () => {
 
                 <>
 
-                    <div className="table-scroll">
+                    {/* Top horizontal scrollbar (synced with table) */}
+                    <div
+                        ref={topScrollRef}
+                        onScroll={() =>
+                            syncScroll("top")
+                        }
+                        style={{
+                            overflowX: "auto",
+                            overflowY: "hidden",
+                            height: 16,
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: tableScrollWidth,
+                                height: 1,
+                            }}
+                        />
+                    </div>
+
+                    <div
+                        className="table-scroll"
+                        ref={tableScrollRef}
+                        onScroll={() =>
+                            syncScroll("table")
+                        }
+                    >
 
                         <table className="result-table">
 
@@ -2414,6 +2521,17 @@ const ResultEntryPage = () => {
                                                         disabled={
                                                             reviewed
                                                         }
+
+                                                        onChange={(value) => {
+
+                                                            handleChange(
+                                                                index,
+                                                                "spec",
+                                                                value
+                                                            );
+
+                                                            setError("");
+                                                        }}
 
                                                         onSelect={(selected) => {
 
